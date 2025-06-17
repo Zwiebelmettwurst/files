@@ -1,0 +1,11 @@
+LimitRequestBody 10737418240
+
+RewriteEngine On
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# file/ muss immer am Ende stehen!
+RewriteRule ^download/([a-zA-Z0-9_-]+)/zip$ download.php?token=$1&zip=1 [L,QSA,B]
+RewriteRule ^download/([a-zA-Z0-9_-]+)/file/(.+)$ download.php?token=$1&file=$2 [L,QSA,B]
+RewriteRule ^download/([a-zA-Z0-9_-]+)$ download.php?token=$1 [L,QSA,B]
