@@ -32,12 +32,33 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
 <script>
     const token = "<?= htmlspecialchars($token) ?>";
 
-    const password = "<?= htmlspecialchars($password) ?>"
+    let password = "<?= htmlspecialchars($password) ?>"
     const highlightFile = "<?= htmlspecialchars($fileHighlight) ?>"
     const alertBox = document.getElementById('alertBox');
     const filesBox = document.getElementById('filesBox');
     const actionBox = document.getElementById('actionBox');
+    const backLink = document.querySelector('.mt-5 a.link-secondary');
     let files = [];
+    updateBackLink();
+
+    function updateBackLink() {
+        if (backLink) {
+            backLink.href = '/' + encodeURIComponent(token) + (password ? '/' + encodeURIComponent(password) : '');
+        }
+    }
+
+    function showPasswordPrompt(msg) {
+        alertBox.innerHTML = `<div class="alert alert-warning text-center">${msg}<br>` +
+            `<div class="input-group mt-2"><input type="password" class="form-control" id="pwInput" placeholder="Password">` +
+            `<button class="btn btn-primary" id="pwSubmit">OK</button></div></div>`;
+        filesBox.innerHTML = '';
+        actionBox.innerHTML = '';
+        document.getElementById('pwSubmit').onclick = function () {
+            password = document.getElementById('pwInput').value.trim();
+            updateBackLink();
+            fetchFiles();
+        };
+    }
 
     // 1. Files laden
     function fetchFiles() {
@@ -49,11 +70,16 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
             .then(r => r.json())
             .then(data => {
                 if (data.error) {
-                    alertBox.innerHTML = `<div class="alert alert-danger text-center">${data.error}</div>`;
-                    filesBox.innerHTML = '';
-                    actionBox.innerHTML = '';
+                    if (data.error.toLowerCase().includes('password')) {
+                        showPasswordPrompt(data.error);
+                    } else {
+                        alertBox.innerHTML = `<div class="alert alert-danger text-center">${data.error}</div>`;
+                        filesBox.innerHTML = '';
+                        actionBox.innerHTML = '';
+                    }
                     return;
                 }
+                alertBox.innerHTML = '';
                 files = data.files || [];
                 renderFiles();
             });
