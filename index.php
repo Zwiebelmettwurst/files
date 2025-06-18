@@ -116,6 +116,9 @@ $pwFromUrl = getPasswordFromUrl();
 <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
+            <div class="modal-header p-1 border-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <div class="modal-body text-center">
                 <img id="previewImg" src="" style="max-width:100%; display:none;" alt="Preview">
                 <pre id="previewText" class="text-start" style="white-space:pre-wrap; max-height:60vh; overflow:auto; display:none;"></pre>
@@ -266,6 +269,7 @@ $pwFromUrl = getPasswordFromUrl();
         document.querySelectorAll('.preview-btn').forEach(btn => {
             const url = btn.getAttribute('data-url');
             const ext = btn.getAttribute('data-ext');
+            btn.addEventListener('click', () => showPreview(url, ext));
             const handler = () => showPreview(url, ext);
             btn.addEventListener('click', handler);
             btn.addEventListener('mouseenter', handler);
