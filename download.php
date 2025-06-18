@@ -23,12 +23,6 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
 <div class="container" style="max-width:540px; margin:2em auto;">
     <h2 class="mb-4 text-primary text-center">Your Uploaded Files</h2>
     <div id="alertBox"></div>
-    <div id="passwordLinkOption" class="form-check mb-2" style="display:none;">
-        <input class="form-check-input" type="checkbox" value="" id="includePasswordLink">
-        <label class="form-check-label" for="includePasswordLink">
-           Attach password to links
-        </label>
-    </div>
     <div id="filesBox"></div>
     <div id="actionBox" class="text-center my-3"></div>
     <div class="mt-5 text-center small text-muted">
@@ -43,14 +37,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
     const alertBox = document.getElementById('alertBox');
     const filesBox = document.getElementById('filesBox');
     const actionBox = document.getElementById('actionBox');
-    const includePasswordLink = document.getElementById('includePasswordLink');
-    const passwordLinkOption = document.getElementById('passwordLinkOption');
     let files = [];
-
-    if (password && password.trim() !== '') {
-        passwordLinkOption.style.display = '';
-    }
-    if (includePasswordLink) includePasswordLink.addEventListener('change', renderFiles);
 
     // 1. Files laden
     function fetchFiles() {
@@ -86,8 +73,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
             return;
         }
         let html = '<div class="list-group mb-4">';
-        const attachPw = includePasswordLink && includePasswordLink.checked && password && password.trim() !== '';
-        const pwSeg = attachPw ? '/' + encodeURIComponent(password) : '';
+        const pwSeg = password && password.trim() !== '' ? '/' + encodeURIComponent(password) : '';
         files.forEach(f => {
             let name = f.name || f;
             let size = f.size ? formatBytes(f.size) : '';
