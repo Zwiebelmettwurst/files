@@ -70,6 +70,10 @@ $pwFromUrl = getPasswordFromUrl();
                     <button type="button" class="btn btn-outline-secondary" id="togglePassword" title="Show/Hide password"><i class="bi bi-eye"></i></button>
                 </div>
             </div>
+            <div id="passwordLinkOption" class="form-check small" style="display:none;">
+                <input class="form-check-input" type="checkbox" value="" id="includePasswordLink">
+                <label class="form-check-label" for="includePasswordLink">Attach password to links</label>
+            </div>
             <div class="d-flex align-items-center">
                 <label for="expiry" class="form-label mb-0 me-2">Expires</label>
                 <select class="form-select form-select-sm" id="expiry" name="expiry" style="width:100px;">
@@ -130,6 +134,8 @@ $pwFromUrl = getPasswordFromUrl();
     const tokenInput = document.getElementById('token');
     const passwordInput = document.getElementById('password');
     const expiryInput = document.getElementById('expiry');
+    const passwordLinkOption = document.getElementById('passwordLinkOption');
+    const includePasswordLink = document.getElementById('includePasswordLink');
     const genTokenBtn = document.getElementById('genTokenBtn');
     const togglePasswordBtn = document.getElementById('togglePassword');
     function getEffectiveToken() {
@@ -151,6 +157,16 @@ $pwFromUrl = getPasswordFromUrl();
             this.innerHTML = isPwd ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
         });
     }
+
+    function updatePasswordOption() {
+        if (!passwordLinkOption) return;
+        passwordLinkOption.style.display = passwordInput.value.trim() ? '' : 'none';
+    }
+    updatePasswordOption();
+    if (passwordInput) passwordInput.addEventListener('input', updatePasswordOption);
+    if (includePasswordLink) includePasswordLink.addEventListener('change', function(){
+        if(lastRender) renderResult(lastRender.data, lastRender.baseUrl, resultBox, lastRender.message);
+    });
 
     document.body.addEventListener('dragover', e => { e.preventDefault(); document.getElementById('drop-area').classList.add('highlight'); });
     document.body.addEventListener('dragleave', e => { e.preventDefault(); document.getElementById('drop-area').classList.remove('highlight'); });
@@ -190,6 +206,7 @@ $pwFromUrl = getPasswordFromUrl();
     const resumeBtn = document.getElementById('resumeBtn');
     const cancelBtn = document.getElementById('cancelBtn');
     const uploadControls = document.getElementById('upload-controls');
+    let lastRender = null;
 
     function showUploadControls(state) {
         if (state === 'uploading') {
@@ -316,6 +333,8 @@ $pwFromUrl = getPasswordFromUrl();
         }
 
         let html = '';
+        const attachPw = includePasswordLink && includePasswordLink.checked && passwordInput.value.trim() !== '';
+        const pwSeg = attachPw ? '/' + encodeURIComponent(passwordInput.value.trim()) : '';
         if (headline) {
             html += `<div class="alert alert-success py-2 px-3 mb-2"><b>${headline}</b></div>`;
         }
@@ -330,7 +349,7 @@ $pwFromUrl = getPasswordFromUrl();
         if (data.files.length > 1) {
             html += `
 <div class="input-group mb-2">
-  <input type="text" class="form-control" id="zipDownloadLink" value="${baseUrl}/zip" readonly>
+  <input type="text" class="form-control" id="zipDownloadLink" value="${baseUrl}/zip${pwSeg}" readonly>
   <button class="btn btn-outline-secondary copy-btn" type="button" data-clipboard-target="zipDownloadLink" title="Copy ZIP link"><i class="bi bi-clipboard"></i></button>
 </div>
 <div id="copyStatus-zipDownloadLink" class="small text-success mb-2" style="display:none;">ZIP link copied!</div>`;
@@ -339,14 +358,15 @@ $pwFromUrl = getPasswordFromUrl();
             let fileLinkId = 'fileDownloadLink_' + idx;
             html += `
 <div class="input-group mb-2 download-row">
-  <input type="text" class="form-control form-control-sm dl-input" id="${fileLinkId}" value="${fn.name}" data-full-link="${baseUrl}/f/${encodeURIComponent(fn.name)}" readonly>
+  <input type="text" class="form-control form-control-sm dl-input" id="${fileLinkId}" value="${fn.name}" data-full-link="${baseUrl}/f/${encodeURIComponent(fn.name)}${pwSeg}" readonly>
   <button class="btn btn-outline-secondary btn-sm copy-btn" type="button" data-clipboard-target="${fileLinkId}"><i class="bi bi-clipboard"></i></button>
-  <a href="${baseUrl}/f/${encodeURIComponent(fn.name)}" class="btn btn-outline-primary btn-sm file-download-link" target="_blank"><i class="bi bi-download"></i></a>
+  <a href="${baseUrl}/f/${encodeURIComponent(fn.name)}${pwSeg}" class="btn btn-outline-primary btn-sm file-download-link" target="_blank"><i class="bi bi-download"></i></a>
   <button class="delete-btn btn btn-outline-danger btn-sm" title="Delete file" data-file="${fn.name}" type="button"><i class="bi bi-trash"></i></button>
 </div>
 <div id="copyStatus-${fileLinkId}" class="small text-success mb-2" style="display:none;">File link copied!</div>`;
         });
         result.innerHTML = html;
+        lastRender = {data: data, baseUrl: baseUrl, message: message};
         document.querySelectorAll('.copy-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var targetId = btn.getAttribute('data-clipboard-target');

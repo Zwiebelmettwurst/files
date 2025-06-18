@@ -2,6 +2,7 @@
 // download.php
 $token = isset($_GET['token']) ? preg_replace('/[^a-zA-Z0-9_\-]/', '', $_GET['token']) : '';
 $password = $_GET['password'] ?? '';
+$fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
 
 ?>
 <!DOCTYPE html>
@@ -14,6 +15,9 @@ $password = $_GET['password'] ?? '';
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .file-highlight { background-color: #fff9d6; }
+    </style>
 </head>
 <body>
 <div class="container" style="max-width:540px; margin:2em auto;">
@@ -35,10 +39,18 @@ $password = $_GET['password'] ?? '';
     const token = "<?= htmlspecialchars($token) ?>";
 
     const password = "<?= htmlspecialchars($password) ?>"
+    const highlightFile = "<?= htmlspecialchars($fileHighlight) ?>"
     const alertBox = document.getElementById('alertBox');
     const filesBox = document.getElementById('filesBox');
     const actionBox = document.getElementById('actionBox');
+    const includePasswordLink = document.getElementById('includePasswordLink');
+    const passwordLinkOption = document.getElementById('passwordLinkOption');
     let files = [];
+
+    if (password && password.trim() !== '') {
+        passwordLinkOption.style.display = '';
+    }
+    if (includePasswordLink) includePasswordLink.addEventListener('change', renderFiles);
 
     // 1. Files laden
     function fetchFiles() {
@@ -74,15 +86,14 @@ $password = $_GET['password'] ?? '';
             return;
         }
         let html = '<div class="list-group mb-4">';
+        const attachPw = includePasswordLink && includePasswordLink.checked && password && password.trim() !== '';
+        const pwSeg = attachPw ? '/' + encodeURIComponent(password) : '';
         files.forEach(f => {
             let name = f.name || f;
             let size = f.size ? formatBytes(f.size) : '';
-            let downloadUrl = `/action/d/${encodeURIComponent(token)}/f/${encodeURIComponent(name)}`;
-            if (password && password.trim() !== '') {
-                downloadUrl += '/' + encodeURIComponent(password);
-            }
+            let downloadUrl = `/action/d/${encodeURIComponent(token)}/f/${encodeURIComponent(name)}${pwSeg}`;
             html += `
-<div class="list-group-item py-2">
+<div class="list-group-item py-2" data-file="${name}">
   <div class="row align-items-center g-2 flex-nowrap">
     <div class="col-6 col-md-8 min-width-0">
       <span class="d-block text-truncate" title="${name}">${name}</span>
@@ -103,13 +114,18 @@ $password = $_GET['password'] ?? '';
         });
         html += '</div>';
         filesBox.innerHTML = html;
+        if (highlightFile) {
+            document.querySelectorAll('.list-group-item[data-file]').forEach(it => {
+                if (it.getAttribute('data-file') === highlightFile) {
+                    it.classList.add('file-highlight');
+                    it.scrollIntoView({behavior:'smooth', block:'center'});
+                }
+            });
+        }
 
         // Actions
         let buttons = '';
-        let zipUrl = `/action/z/${encodeURIComponent(token)}`;
-        if (password && password.trim() !== '') {
-            zipUrl += '/' + encodeURIComponent(password);
-        }
+        let zipUrl = `/action/z/${encodeURIComponent(token)}${pwSeg}`;
         if (files.length > 1) {
             buttons += `<a href="${zipUrl}" class="btn btn-success btn-sm me-2" id="zipBtn">Download all as ZIP</a>`;
         }
