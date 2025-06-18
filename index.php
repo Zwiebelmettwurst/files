@@ -130,7 +130,10 @@ $pwFromUrl = getPasswordFromUrl();
 
     document.body.addEventListener('dragover', e => { e.preventDefault(); document.getElementById('drop-area').classList.add('highlight'); });
     document.body.addEventListener('dragleave', e => { e.preventDefault(); document.getElementById('drop-area').classList.remove('highlight'); });
-    document.body.addEventListener('drop', e => { document.getElementById('drop-area').classList.remove('highlight'); });
+    document.body.addEventListener('drop', e => {
+        e.preventDefault();
+        document.getElementById('drop-area').classList.remove('highlight');
+    });
 
     let r = new Resumable({
         target: '/action/upload',
