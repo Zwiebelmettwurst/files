@@ -1,4 +1,8 @@
 <?php
+
+http_response_code(410);
+echo "upload.php wurde durch api.php ersetzt.";
+exit;
 // --- Settings ---
 $uploadBaseDir = __DIR__ . '/uploads/';
 $now = time();

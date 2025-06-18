@@ -2,10 +2,82 @@ LimitRequestBody 10737418240
 
 RewriteEngine On
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+# Verhindere Umschreiben existierender Dateien oder Verzeichnisse
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
 
-# file/ muss immer am Ende stehen!
-RewriteRule ^download/([a-zA-Z0-9_-]+)/zip$ download.php?token=$1&zip=1 [L,QSA,B]
-RewriteRule ^download/([a-zA-Z0-9_-]+)/file/(.+)$ download.php?token=$1&file=$2 [L,QSA,B]
-RewriteRule ^download/([a-zA-Z0-9_-]+)$ download.php?token=$1 [L,QSA,B]
+# ---------------------------------------------
+# API-Shortcuts (action/..., z.B. /action/list/token/passwort)
+# ---------------------------------------------
+# UPLOAD (POST/PUT) - Token & (optional) Filename im Pfad
+RewriteRule ^action/upload/([a-zA-Z0-9_-]+)/([^/]+)$ api.php?action=upload&token=$1&filename=$2 [L,QSA,B]
+RewriteRule ^action/upload/([a-zA-Z0-9_-]+)$         api.php?action=upload&token=$1 [L,QSA,B]
+RewriteRule ^action/u/([a-zA-Z0-9_-]+)/([^/]+)$      api.php?action=upload&token=$1&filename=$2 [L,QSA,B]
+RewriteRule ^action/u/([a-zA-Z0-9_-]+)$              api.php?action=upload&token=$1 [L,QSA,B]
+RewriteRule ^action/upload$ api.php?action=upload [L,QSA,B]
+RewriteRule ^action/u$ api.php?action=upload [L,QSA,B]
+
+# ---------------------------------------------
+# API-Shortcuts (action/..., z.B. /action/download/token/file/datei/pw)
+# ---------------------------------------------
+
+# Einzeldatei-Download (lang/kurz, mit/ohne Passwort)
+RewriteRule ^action/download/([a-zA-Z0-9_-]+)/file/(.+)/([^/]*)$ api.php?action=download&token=$1&file=$2&password=$3 [L,QSA,B]
+RewriteRule ^action/download/([a-zA-Z0-9_-]+)/file/(.+)$        api.php?action=download&token=$1&file=$2 [L,QSA,B]
+RewriteRule ^action/d/([a-zA-Z0-9_-]+)/f/(.+)/([^/]*)$          api.php?action=download&token=$1&file=$2&password=$3 [L,QSA,B]
+RewriteRule ^action/d/([a-zA-Z0-9_-]+)/f/(.+)$                  api.php?action=download&token=$1&file=$2 [L,QSA,B]
+
+# ZIP-Download (mit/ohne Passwort)
+RewriteRule ^action/zip/([a-zA-Z0-9_-]+)/([^/]*)$ api.php?action=zip&token=$1&password=$2 [L,QSA,B]
+RewriteRule ^action/zip/([a-zA-Z0-9_-]+)$         api.php?action=zip&token=$1 [L,QSA,B]
+RewriteRule ^action/z/([a-zA-Z0-9_-]+)/([^/]*)$   api.php?action=zip&token=$1&password=$2 [L,QSA,B]
+RewriteRule ^action/z/([a-zA-Z0-9_-]+)$           api.php?action=zip&token=$1 [L,QSA,B]
+
+# Delete Einzeldatei (mit/ohne Passwort)
+RewriteRule ^action/delete/([a-zA-Z0-9_-]+)/file/(.+)/([^/]*)$ api.php?action=delete&token=$1&file=$2&password=$3 [L,QSA,B]
+RewriteRule ^action/delete/([a-zA-Z0-9_-]+)/file/(.+)$         api.php?action=delete&token=$1&file=$2 [L,QSA,B]
+RewriteRule ^action/del/([a-zA-Z0-9_-]+)/f/(.+)/([^/]*)$       api.php?action=delete&token=$1&file=$2&password=$3 [L,QSA,B]
+RewriteRule ^action/del/([a-zA-Z0-9_-]+)/f/(.+)$               api.php?action=delete&token=$1&file=$2 [L,QSA,B]
+
+# Delete ALL (mit/ohne Passwort)
+RewriteRule ^action/delete/([a-zA-Z0-9_-]+)/([^/]*)$ api.php?action=delete&token=$1&password=$2 [L,QSA,B]
+RewriteRule ^action/delete/([a-zA-Z0-9_-]+)$         api.php?action=delete&token=$1 [L,QSA,B]
+RewriteRule ^action/del/([a-zA-Z0-9_-]+)/([^/]*)$    api.php?action=delete&token=$1&password=$2 [L,QSA,B]
+RewriteRule ^action/del/([a-zA-Z0-9_-]+)$            api.php?action=delete&token=$1 [L,QSA,B]
+RewriteRule ^action/delete$                          api.php?action=delete [L,QSA,B]
+RewriteRule ^action/del$                             api.php?action=delete [L,QSA,B]
+
+# List alle Dateien (token und password als Pfad, pw kann leer sein)
+RewriteRule ^action/list/([a-zA-Z0-9_-]+)/([^/]*)$ api.php?action=list&token=$1&password=$2 [L,QSA,B]
+RewriteRule ^action/list/([a-zA-Z0-9_-]+)$         api.php?action=list&token=$1&password= [L,QSA,B]
+RewriteRule ^action/l/([a-zA-Z0-9_-]+)/([^/]*)$    api.php?action=list&token=$1&password=$2 [L,QSA,B]
+RewriteRule ^action/l/([a-zA-Z0-9_-]+)$            api.php?action=list&token=$1&password= [L,QSA,B]
+
+# ---------------------------------------------
+# Download-Shortcuts wie bisher (für Kompatibilität)
+# ---------------------------------------------
+RewriteRule ^download/([a-zA-Z0-9_-]+)/zip/([^/]*)$ download.php?token=$1&zip=1&password=$2 [L,QSA,B]
+RewriteRule ^download/([a-zA-Z0-9_-]+)/zip$         download.php?token=$1&zip=1 [L,QSA,B]
+RewriteRule ^download/([a-zA-Z0-9_-]+)/file/(.+)/([^/]*)$ download.php?token=$1&file=$2&password=$3 [L,QSA,B]
+RewriteRule ^download/([a-zA-Z0-9_-]+)/file/(.+)$         download.php?token=$1&file=$2 [L,QSA,B]
+RewriteRule ^download/([a-zA-Z0-9_-]+)/([^/]*)$           download.php?token=$1&password=$2 [L,QSA,B]
+RewriteRule ^download/([a-zA-Z0-9_-]+)$                   download.php?token=$1 [L,QSA,B]
+
+# Alternative: /d/ statt /download/ für alle Routen
+RewriteRule ^d/([a-zA-Z0-9_-]+)/zip/([^/]*)$ download.php?token=$1&zip=1&password=$2 [L,QSA,B]
+RewriteRule ^d/([a-zA-Z0-9_-]+)/zip$         download.php?token=$1&zip=1 [L,QSA,B]
+RewriteRule ^d/([a-zA-Z0-9_-]+)/file/(.+)/([^/]*)$ download.php?token=$1&file=$2&password=$3 [L,QSA,B]
+RewriteRule ^d/([a-zA-Z0-9_-]+)/file/(.+)$         download.php?token=$1&file=$2 [L,QSA,B]
+RewriteRule ^d/([a-zA-Z0-9_-]+)/([^/]*)$           download.php?token=$1&password=$2 [L,QSA,B]
+RewriteRule ^d/([a-zA-Z0-9_-]+)$                   download.php?token=$1 [L,QSA,B]
+# "file" auch als "f"
+RewriteRule ^d/([a-zA-Z0-9_-]+)/f/(.+)/([^/]*)$ download.php?token=$1&file=$2&password=$3 [L,QSA,B]
+RewriteRule ^d/([a-zA-Z0-9_-]+)/f/(.+)$         download.php?token=$1&file=$2 [L,QSA,B]
+
+# ---------------------------------------------
+# Direkt-Links zu Upload/Index mit token & password im Pfad
+# Beispiel: /hUARK4N/xyz  →  /?token=hUARK4N&password=xyz
+# ---------------------------------------------
+RewriteRule ^([a-zA-Z0-9_-]+)/([^/]+)$ index.php?token=$1&password=$2 [L,QSA,B]
+RewriteRule ^([a-zA-Z0-9_-]+)$         index.php?token=$1 [L,QSA,B]
