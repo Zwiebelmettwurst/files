@@ -104,6 +104,13 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
             let name = f.name || f;
             let size = f.size ? formatBytes(f.size) : '';
             let downloadUrl = `/action/d/${encodeURIComponent(token)}/f/${encodeURIComponent(name)}${pwSeg}`;
+            let ext = name.split('.').pop().toLowerCase();
+            let preview = '';
+            if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)){
+                preview = `<img src="${downloadUrl}" class="img-thumbnail mt-2" style="max-width:120px;">`;
+            }else if(['txt','md','csv','log','html','htm','json'].includes(ext)){
+                preview = `<pre class="text-preview border rounded p-2 mt-2" data-url="${downloadUrl}" style="white-space:pre-wrap; max-height:160px; overflow:auto;"></pre>`;
+            }
             html += `
 <div class="list-group-item py-2" data-file="${name}">
   <div class="row align-items-center g-2 flex-nowrap">
@@ -121,6 +128,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
       <button class="delete-btn btn btn-outline-danger btn-sm" data-file="${name}"><i class="bi bi-trash"></i></button>
     </div>
   </div>
+  ${preview}
 </div>
 `;
         });
@@ -166,6 +174,17 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
                         }
                     });
             };
+        });
+        document.querySelectorAll('.text-preview').forEach(el => {
+            let url = el.getAttribute('data-url');
+            if (url) {
+                fetch(url)
+                    .then(r => r.text())
+                    .then(t => {
+                        let snippet = t.substring(0,500);
+                        el.textContent = snippet + (t.length>500?'...':'');
+                    });
+            }
         });
 // Alle löschen
         document.getElementById('deleteBtn').onclick = function () {

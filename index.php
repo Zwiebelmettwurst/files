@@ -356,14 +356,23 @@ $pwFromUrl = getPasswordFromUrl();
         }
         data.files.forEach((fn, idx) => {
             let fileLinkId = 'fileDownloadLink_' + idx;
+            let fileUrl = `${baseUrl}/f/${encodeURIComponent(fn.name)}${pwSeg}`;
+            let ext = fn.name.split('.').pop().toLowerCase();
+            let preview = '';
+            if (['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) {
+                preview = `<img src="${fileUrl}" class="img-thumbnail mt-2" style="max-width:120px;">`;
+            } else if (['txt','md','csv','log','html','htm','json'].includes(ext)) {
+                preview = `<pre class="text-preview border rounded p-2 mt-2" data-url="${fileUrl}" style="white-space:pre-wrap; max-height:160px; overflow:auto;"></pre>`;
+            }
             html += `
 <div class="input-group mb-2 download-row">
-  <input type="text" class="form-control form-control-sm dl-input" id="${fileLinkId}" value="${fn.name}" data-full-link="${baseUrl}/f/${encodeURIComponent(fn.name)}${pwSeg}" readonly>
+  <input type="text" class="form-control form-control-sm dl-input" id="${fileLinkId}" value="${fn.name}" data-full-link="${fileUrl}" readonly>
   <button class="btn btn-outline-secondary btn-sm copy-btn" type="button" data-clipboard-target="${fileLinkId}"><i class="bi bi-clipboard"></i></button>
-  <a href="${baseUrl}/f/${encodeURIComponent(fn.name)}${pwSeg}" class="btn btn-outline-primary btn-sm file-download-link" target="_blank"><i class="bi bi-download"></i></a>
+  <a href="${fileUrl}" class="btn btn-outline-primary btn-sm file-download-link" target="_blank"><i class="bi bi-download"></i></a>
   <button class="delete-btn btn btn-outline-danger btn-sm" title="Delete file" data-file="${fn.name}" type="button"><i class="bi bi-trash"></i></button>
 </div>
-<div id="copyStatus-${fileLinkId}" class="small text-success mb-2" style="display:none;">File link copied!</div>`;
+<div id="copyStatus-${fileLinkId}" class="small text-success mb-2" style="display:none;">File link copied!</div>
+${preview}`;
         });
         result.innerHTML = html;
         lastRender = {data: data, baseUrl: baseUrl, message: message};
@@ -414,6 +423,17 @@ $pwFromUrl = getPasswordFromUrl();
                     }
                 }
             });
+        });
+        document.querySelectorAll('.text-preview').forEach(function(el){
+            var url = el.getAttribute('data-url');
+            if(url){
+                fetch(url)
+                    .then(function(r){return r.text();})
+                    .then(function(t){
+                        var snippet = t.substring(0,500);
+                        el.textContent = snippet + (t.length>500?'...':'');
+                    });
+            }
         });
     }
 
