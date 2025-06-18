@@ -126,6 +126,8 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
 
     function initPreviewButtons() {
         document.querySelectorAll('.preview-btn').forEach(btn => {
+            if (btn.dataset.previewBound) return;
+            btn.dataset.previewBound = '1';
             const url = btn.getAttribute('data-url');
             const ext = btn.getAttribute('data-ext');
             btn.addEventListener('click', () => showPreview(url, ext));
