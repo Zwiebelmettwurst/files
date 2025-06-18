@@ -79,6 +79,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
                     }
                     return;
                 }
+                alertBox.innerHTML = '';
                 files = data.files || [];
                 renderFiles();
             });
