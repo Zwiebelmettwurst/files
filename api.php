@@ -281,7 +281,7 @@ if ($action === 'download') {
     header('Content-Length: ' . filesize($filePath));
     readfile($filePath);
     // **Jetzt direkt löschen**
-    if ($preserveFile) { unlink($filePath); }
+    if (!$preserveFile) { unlink($filePath); }
 
     // (Optional: Datei nach Download löschen? Oder separat per delete!)
     exit;
