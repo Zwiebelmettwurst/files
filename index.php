@@ -382,7 +382,7 @@ $pwFromUrl = getPasswordFromUrl();
         html += `
 <div class="mb-2 small">Download links:</div>
 <div class="input-group mb-2">
-  <input type="text" class="form-control" id="mainDownloadLink" value="${baseUrl}" readonly>
+  <input type="text" class="form-control" id="mainDownloadLink" value="${baseUrl}${pwSeg}" readonly>
   <button class="btn btn-outline-secondary copy-btn" type="button" data-clipboard-target="mainDownloadLink" title="Copy folder link"><i class="bi bi-clipboard"></i></button>
 </div>
 <div id="copyStatus-mainDownloadLink" class="small text-success mb-2" style="display:none;">Folder link copied!</div>
