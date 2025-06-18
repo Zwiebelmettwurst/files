@@ -270,6 +270,9 @@ $pwFromUrl = getPasswordFromUrl();
             const url = btn.getAttribute('data-url');
             const ext = btn.getAttribute('data-ext');
             btn.addEventListener('click', () => showPreview(url, ext));
+            const handler = () => showPreview(url, ext);
+            btn.addEventListener('click', handler);
+            btn.addEventListener('mouseenter', handler);
         });
     }
 
