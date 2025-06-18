@@ -113,6 +113,16 @@ $pwFromUrl = getPasswordFromUrl();
                 onclick="document.getElementById('qrModal').style.display='none'">Close</button>
     </div>
 </div>
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <img id="previewImg" src="" style="max-width:100%; display:none;" alt="Preview">
+                <pre id="previewText" class="text-start" style="white-space:pre-wrap; max-height:60vh; overflow:auto; display:none;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // --------- Utility ---------
@@ -232,6 +242,34 @@ $pwFromUrl = getPasswordFromUrl();
         progressBarInner.style.width = "0%";
         progressBarInner.textContent = "";
         progressInfo.innerHTML = "";
+    }
+
+    function showPreview(url, ext) {
+        const img = document.getElementById('previewImg');
+        const txt = document.getElementById('previewText');
+        img.style.display = 'none';
+        txt.style.display = 'none';
+        if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) {
+            img.src = url;
+            img.style.display = '';
+            new bootstrap.Modal(document.getElementById('previewModal')).show();
+        } else if(['txt','md','csv','log','html','htm','json'].includes(ext)) {
+            fetch(url).then(r=>r.text()).then(t => {
+                txt.textContent = t.substring(0,2000) + (t.length>2000?'...':'');
+                txt.style.display = '';
+                new bootstrap.Modal(document.getElementById('previewModal')).show();
+            });
+        }
+    }
+
+    function initPreviewButtons() {
+        document.querySelectorAll('.preview-btn').forEach(btn => {
+            const url = btn.getAttribute('data-url');
+            const ext = btn.getAttribute('data-ext');
+            const handler = () => showPreview(url, ext);
+            btn.addEventListener('click', handler);
+            btn.addEventListener('mouseenter', handler);
+        });
     }
 
     r.assignDrop(dropArea);
@@ -354,25 +392,22 @@ $pwFromUrl = getPasswordFromUrl();
 </div>
 <div id="copyStatus-zipDownloadLink" class="small text-success mb-2" style="display:none;">ZIP link copied!</div>`;
         }
+        const pwVal = passwordInput.value.trim();
+        const pwSegFile = pwVal ? '/' + encodeURIComponent(pwVal) : '';
         data.files.forEach((fn, idx) => {
             let fileLinkId = 'fileDownloadLink_' + idx;
             let fileUrl = `${baseUrl}/f/${encodeURIComponent(fn.name)}${pwSeg}`;
-            let previewUrl = `${window.location.origin}/action/d/${encodeURIComponent(fn.token)}/f/${encodeURIComponent(fn.name)}${passwordInput.value.trim() !== '' ? '/' + encodeURIComponent(passwordInput.value.trim()) : ''}?&preserve=true`;            let ext = fn.name.split('.').pop().toLowerCase();
-            let preview = '';
-            if (['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) {
-                preview = `<img src="${previewUrl}" class="img-thumbnail mt-2" style="max-width:120px;">`;
-            } else if (['txt','md','csv','log','html','htm','json'].includes(ext)) {
-                preview = `<pre class="text-preview border rounded p-2 mt-2" data-url="${previewUrl}" style="white-space:pre-wrap; max-height:160px; overflow:auto;"></pre>`;
-            }
+            let previewUrl = `${window.location.origin}/action/d/${encodeURIComponent(fn.token)}/f/${encodeURIComponent(fn.name)}${pwSegFile}?preserve=true`;
+            let ext = fn.name.split('.').pop().toLowerCase();
             html += `
 <div class="input-group mb-2 download-row">
   <input type="text" class="form-control form-control-sm dl-input" id="${fileLinkId}" value="${fn.name}" data-full-link="${fileUrl}" readonly>
   <button class="btn btn-outline-secondary btn-sm copy-btn" type="button" data-clipboard-target="${fileLinkId}"><i class="bi bi-clipboard"></i></button>
+  <button class="btn btn-outline-secondary btn-sm preview-btn" type="button" data-url="${previewUrl}" data-ext="${ext}" title="Preview"><i class="bi bi-eye"></i></button>
   <a href="${fileUrl}" class="btn btn-outline-primary btn-sm file-download-link" target="_blank"><i class="bi bi-download"></i></a>
   <button class="delete-btn btn btn-outline-danger btn-sm" title="Delete file" data-file="${fn.name}" type="button"><i class="bi bi-trash"></i></button>
 </div>
-<div id="copyStatus-${fileLinkId}" class="small text-success mb-2" style="display:none;">File link copied!</div>
-${preview}`;
+<div id="copyStatus-${fileLinkId}" class="small text-success mb-2" style="display:none;">File link copied!</div>`;
         });
         result.innerHTML = html;
         lastRender = {data: data, baseUrl: baseUrl, message: message};
@@ -424,17 +459,7 @@ ${preview}`;
                 }
             });
         });
-        document.querySelectorAll('.text-preview').forEach(function(el){
-            var url = el.getAttribute('data-url');
-            if(url){
-                fetch(url)
-                    .then(function(r){return r.text();})
-                    .then(function(t){
-                        var snippet = t.substring(0,500);
-                        el.textContent = snippet + (t.length>500?'...':'');
-                    });
-            }
-        });
+        initPreviewButtons();
     }
 
     r.on('fileError', function (file, msg) {
