@@ -29,6 +29,20 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
         <a href="/<?= htmlspecialchars($token) . (empty($password) ? '' : '/' . htmlspecialchars($password)) ?>" class="link-secondary">&larr; Back to upload / add more files</a>
     </div>
 </div>
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header p-1 border-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="previewImg" src="" style="max-width:100%; display:none;" alt="Preview">
+                <pre id="previewText" class="text-start" style="white-space:pre-wrap; max-height:60vh; overflow:auto; display:none;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const token = "<?= htmlspecialchars($token) ?>";
 
@@ -92,6 +106,32 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
         return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
     }
 
+    function showPreview(url, ext) {
+        const img = document.getElementById('previewImg');
+        const txt = document.getElementById('previewText');
+        img.style.display = 'none';
+        txt.style.display = 'none';
+        if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) {
+            img.src = url;
+            img.style.display = '';
+            new bootstrap.Modal(document.getElementById('previewModal')).show();
+        } else if(['txt','md','csv','log','html','htm','json'].includes(ext)) {
+            fetch(url).then(r=>r.text()).then(t => {
+                txt.textContent = t.substring(0,2000) + (t.length>2000?'...':'');
+                txt.style.display = '';
+                new bootstrap.Modal(document.getElementById('previewModal')).show();
+            });
+        }
+    }
+
+    function initPreviewButtons() {
+        document.querySelectorAll('.preview-btn').forEach(btn => {
+            const url = btn.getAttribute('data-url');
+            const ext = btn.getAttribute('data-ext');
+            btn.addEventListener('click', () => showPreview(url, ext));
+        });
+    }
+
     function renderFiles() {
         if (!files.length) {
             filesBox.innerHTML = `<div class="alert alert-warning text-center">No files available.</div>`;
@@ -100,17 +140,13 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
         }
         let html = '<div class="list-group mb-4">';
         const pwSeg = password && password.trim() !== '' ? '/' + encodeURIComponent(password) : '';
+        const pwSegFile = password && password.trim() !== '' ? '/' + encodeURIComponent(password) : '';
         files.forEach(f => {
             let name = f.name || f;
             let size = f.size ? formatBytes(f.size) : '';
             let downloadUrl = `/action/d/${encodeURIComponent(token)}/f/${encodeURIComponent(name)}${pwSeg}`;
+            let previewUrl = `/action/d/${encodeURIComponent(token)}/f/${encodeURIComponent(name)}${pwSegFile}?preserve=true`;
             let ext = name.split('.').pop().toLowerCase();
-            let preview = '';
-            if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)){
-                preview = `<img src="${downloadUrl}" class="img-thumbnail mt-2" style="max-width:120px;">`;
-            }else if(['txt','md','csv','log','html','htm','json'].includes(ext)){
-                preview = `<pre class="text-preview border rounded p-2 mt-2" data-url="${downloadUrl}" style="white-space:pre-wrap; max-height:160px; overflow:auto;"></pre>`;
-            }
             html += `
 <div class="list-group-item py-2" data-file="${name}">
   <div class="row align-items-center g-2 flex-nowrap">
@@ -125,10 +161,10 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
          class="btn btn-outline-primary btn-sm" download title="Download">
         <i class="bi bi-download"></i>
       </a>
+      <button class="btn btn-outline-secondary btn-sm preview-btn" data-url="${previewUrl}" data-ext="${ext}" title="Preview"><i class="bi bi-eye"></i></button>
       <button class="delete-btn btn btn-outline-danger btn-sm" data-file="${name}"><i class="bi bi-trash"></i></button>
     </div>
   </div>
-  ${preview}
 </div>
 `;
         });
@@ -177,18 +213,8 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
                     });
             };
         });
-        document.querySelectorAll('.text-preview').forEach(el => {
-            let url = el.getAttribute('data-url');
-            if (url) {
-                fetch(url)
-                    .then(r => r.text())
-                    .then(t => {
-                        let snippet = t.substring(0,500);
-                        el.textContent = snippet + (t.length>500?'...':'');
-                    });
-            }
-        });
-// Alle löschen
+        initPreviewButtons();
+        // Alle löschen
         document.getElementById('deleteBtn').onclick = function () {
             if (!confirm('Really delete ALL files?')) return;
             let body = `token=${encodeURIComponent(token)}`;
