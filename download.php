@@ -20,7 +20,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
     </style>
 </head>
 <body>
-<div class="container" style="max-width:540px; margin:2em auto;">
+<div class="container" style="max-width:600px; margin:2em auto;">
     <h2 class="mb-4 text-primary text-center">Your Uploaded Files</h2>
     <div id="alertBox"></div>
     <div id="filesBox"></div>
@@ -148,8 +148,10 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
         let zipUrl = `/action/z/${encodeURIComponent(token)}${pwSeg}`;
         if (files.length > 1) {
             buttons += `<a href="${zipUrl}" class="btn btn-success btn-sm me-2" id="zipBtn">Download all as ZIP</a>`;
+            buttons += `<button id="deleteBtn" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i> Delete all files</button>`;
+        } else {
+            buttons += `<button id="deleteBtn" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i> Delete file</button>`;
         }
-        buttons += `<button id="deleteBtn" class="btn btn-danger btn-sm">Delete all files</button>`;
         actionBox.innerHTML = buttons;
 
         // Einzel-Datei löschen

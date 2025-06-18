@@ -49,7 +49,7 @@ $pwFromUrl = getPasswordFromUrl();
     </style>
 </head>
 <body>
-<div class="container my-5" style="max-width: 540px;">
+<div class="container my-5" style="max-width: 600px;">
     <h2 class="mb-4 text-primary text-center">Resumable File Upload</h2>
     <form id="uploadForm" autocomplete="off" class="mb-3">
         <div class="mb-3 d-flex justify-content-center flex-wrap gap-3">
