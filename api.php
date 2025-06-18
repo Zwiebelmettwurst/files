@@ -211,7 +211,8 @@ if ($action === 'list') {
         $path = token_dir($token) . '/' . $f;
         $out[] = [
             'name' => $f,
-            'size' => file_exists($path) ? filesize($path) : null
+            'size' => file_exists($path) ? filesize($path) : null,
+            'token' => $token
         ];
     }
     echo json_encode(['files' => $out]);

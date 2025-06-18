@@ -357,12 +357,12 @@ $pwFromUrl = getPasswordFromUrl();
         data.files.forEach((fn, idx) => {
             let fileLinkId = 'fileDownloadLink_' + idx;
             let fileUrl = `${baseUrl}/f/${encodeURIComponent(fn.name)}${pwSeg}`;
-            let ext = fn.name.split('.').pop().toLowerCase();
+            let previewUrl = `${window.location.origin}/action/d/${encodeURIComponent(fn.token)}/f/${encodeURIComponent(fn.name)}${passwordInput.value.trim() !== '' ? '/' + encodeURIComponent(passwordInput.value.trim()) : ''}?&preserve=true`;            let ext = fn.name.split('.').pop().toLowerCase();
             let preview = '';
             if (['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) {
-                preview = `<img src="${fileUrl}" class="img-thumbnail mt-2" style="max-width:120px;">`;
+                preview = `<img src="${previewUrl}" class="img-thumbnail mt-2" style="max-width:120px;">`;
             } else if (['txt','md','csv','log','html','htm','json'].includes(ext)) {
-                preview = `<pre class="text-preview border rounded p-2 mt-2" data-url="${fileUrl}" style="white-space:pre-wrap; max-height:160px; overflow:auto;"></pre>`;
+                preview = `<pre class="text-preview border rounded p-2 mt-2" data-url="${previewUrl}" style="white-space:pre-wrap; max-height:160px; overflow:auto;"></pre>`;
             }
             html += `
 <div class="input-group mb-2 download-row">
