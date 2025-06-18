@@ -56,13 +56,19 @@ $pwFromUrl = getPasswordFromUrl();
             <div class="form-text">Open this page with <code>/&lt;token&gt;/&lt;password&gt;</code> to prefill the fields.</div>
             <div class="d-flex align-items-center">
                 <label for="token" class="form-label mb-0 me-2">Token</label>
-                <input type="text" class="form-control form-control-sm" id="token" name="token"
-                       style="width: 120px;" placeholder="optional" value="<?= htmlspecialchars($tokenFromUrl) ?>">
+                <div class="input-group input-group-sm" style="width: 150px;">
+                    <input type="text" class="form-control" id="token" name="token" placeholder="optional"
+                           value="<?= htmlspecialchars($tokenFromUrl) ?>">
+                    <button type="button" class="btn btn-outline-secondary" id="genTokenBtn" title="Generate token"><i class="bi bi-shuffle"></i></button>
+                </div>
             </div>
             <div class="d-flex align-items-center">
                 <label for="password" class="form-label mb-0 me-2">Password</label>
-                <input type="password" class="form-control form-control-sm" id="password" name="password"
-                       style="width: 120px;" placeholder="optional" value="<?= htmlspecialchars($pwFromUrl) ?>">
+                <div class="input-group input-group-sm" style="width: 150px;">
+                    <input type="password" class="form-control" id="password" name="password" placeholder="optional"
+                           value="<?= htmlspecialchars($pwFromUrl) ?>">
+                    <button type="button" class="btn btn-outline-secondary" id="togglePassword" title="Show/Hide password"><i class="bi bi-eye"></i></button>
+                </div>
             </div>
             <div class="d-flex align-items-center">
                 <label for="expiry" class="form-label mb-0 me-2">Expires</label>
@@ -124,8 +130,26 @@ $pwFromUrl = getPasswordFromUrl();
     const tokenInput = document.getElementById('token');
     const passwordInput = document.getElementById('password');
     const expiryInput = document.getElementById('expiry');
+    const genTokenBtn = document.getElementById('genTokenBtn');
+    const togglePasswordBtn = document.getElementById('togglePassword');
     function getEffectiveToken() {
         return tokenInput.value.trim() || currentToken || invisibleToken;
+    }
+
+    if (genTokenBtn) {
+        genTokenBtn.addEventListener('click', function () {
+            const newTok = randomToken();
+            tokenInput.value = newTok;
+            currentToken = newTok;
+        });
+    }
+
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener('click', function () {
+            const isPwd = passwordInput.type === 'password';
+            passwordInput.type = isPwd ? 'text' : 'password';
+            this.innerHTML = isPwd ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        });
     }
 
     document.body.addEventListener('dragover', e => { e.preventDefault(); document.getElementById('drop-area').classList.add('highlight'); });
