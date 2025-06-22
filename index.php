@@ -248,22 +248,82 @@ $pwFromUrl = getPasswordFromUrl();
     }
 
     function showPreview(url, ext) {
+        const LOADER_SVG =
+            "data:image/svg+xml;utf8," +
+            encodeURIComponent(`
+    <svg width="64" height="64" viewBox="0 0 64 48" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="24" r="10" fill="#007bff">
+        <animate
+          attributeName="cy"
+          values="24;6;24"
+          keyTimes="0;0.5;1"
+          dur="0.8s"
+          repeatCount="indefinite"/>
+        <animate
+          attributeName="r"
+          values="10;12;10"
+          keyTimes="0;0.5;1"
+          dur="0.8s"
+          repeatCount="indefinite"/>
+      </circle>
+      <ellipse cx="32" cy="41" rx="14" ry="3.2" fill="#b3d6fc" opacity="0.7">
+        <animate
+          attributeName="rx"
+          values="14;8;14"
+          keyTimes="0;0.5;1"
+          dur="0.8s"
+          repeatCount="indefinite"/>
+          <animate
+          attributeName="opacity"
+          values="0.7;0.4;0.7"
+          keyTimes="0;0.5;1"
+          dur="0.8s"
+          repeatCount="indefinite"/>
+      </ellipse>
+    </svg>
+  `);
+
         const img = document.getElementById('previewImg');
         const txt = document.getElementById('previewText');
         img.style.display = 'none';
         txt.style.display = 'none';
-        if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) {
-            img.src = url;
-            img.style.display = '';
+
+        // Lade-Bobber anzeigen, bevor etwas geladen wird
+        img.src = LOADER_SVG;
+        img.style.display = '';
+        txt.style.display = 'none';
+
+        if (['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) {
+            // Bilddateien
+            img.src = LOADER_SVG; // Erst Bobber, dann Bild nachladen
+            img.onload = null; // Entferne evtl. alten onload-Handler
+            // Nach kurzem Timeout das Bild wirklich laden (Bobber bleibt kurz sichtbar)
+            setTimeout(() => {
+                img.src = url;
+                img.onload = () => {}; // optional: nach Laden z. B. Spinner ausblenden
+            }, 150);
+            txt.style.display = 'none';
             new bootstrap.Modal(document.getElementById('previewModal')).show();
-        } else if(['txt','md','csv','log','html','htm','json'].includes(ext)) {
-            fetch(url).then(r=>r.text()).then(t => {
+        } else if (['txt','md','csv','log','html','htm','json'].includes(ext)) {
+            // Textdateien
+            img.style.display = 'none';
+            txt.textContent = "Loading...";
+            txt.style.display = '';
+            fetch(url).then(r => r.text()).then(t => {
                 txt.textContent = t.substring(0,2000) + (t.length>2000?'...':'');
-                txt.style.display = '';
-                new bootstrap.Modal(document.getElementById('previewModal')).show();
+            }).catch(() => {
+                txt.textContent = "Error loading preview!";
             });
+            new bootstrap.Modal(document.getElementById('previewModal')).show();
+        } else {
+            // Nicht unterstützt: Zeige Hinweis
+            img.style.display = 'none';
+            txt.textContent = "Preview not supported for this filetype.";
+            txt.style.display = '';
+            new bootstrap.Modal(document.getElementById('previewModal')).show();
         }
     }
+
 
     function initPreviewButtons() {
         document.querySelectorAll('.preview-btn').forEach(btn => {

@@ -209,10 +209,12 @@ if ($action === 'list') {
     $out = [];
     foreach ($files as $f) {
         $path = token_dir($token) . '/' . $f;
+        $ext = pathinfo($f, PATHINFO_EXTENSION);
         $out[] = [
             'name' => $f,
             'size' => file_exists($path) ? filesize($path) : null,
-            'token' => $token
+            'token' => $token,
+            'extension' => $ext
         ];
     }
     echo json_encode(['files' => $out]);
