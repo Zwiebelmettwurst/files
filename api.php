@@ -92,9 +92,7 @@ if ($action === 'upload') {
     // Optional flag to mark that the uploaded data is already client side
     // encrypted. The server does not know the key and will only store the
     // binary data as provided.
-    if (isset($_REQUEST['encrypted'])) {
-        $meta['encrypted'] = (bool)$_REQUEST['encrypted'];
-    }
+    if (!isset($meta['files'])) $meta['files'] = [];
     if (isset($_REQUEST['expiry'])) {
         $exp = null;
         switch ($_REQUEST['expiry']) {
@@ -161,6 +159,9 @@ if ($action === 'upload') {
             $existing = file_exists($map) ? file($map, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
             $allFiles = array_unique(array_merge($existing, [$filename]));
             file_put_contents($map, implode("\n", $allFiles));
+            $encFlag = isset($_REQUEST['encrypted']) && $_REQUEST['encrypted'];
+            $meta['files'][$filename]['encrypted'] = $encFlag;
+            save_meta($token, $meta);
             log_action($dir, "UPLOAD: $filename (resumable, $totalChunks chunks)");
             echo json_encode(['status' => 'ok', 'files' => [$filename], 'token' => $token]);
         } else {
@@ -188,6 +189,11 @@ if ($action === 'upload') {
         $existing = file_exists($map) ? file($map, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
         $allFiles = array_unique(array_merge($existing, $saved));
         file_put_contents($map, implode("\n", $allFiles));
+        $encFlag = isset($_REQUEST['encrypted']) && $_REQUEST['encrypted'];
+        foreach ($saved as $fn) {
+            $meta['files'][$fn]['encrypted'] = $encFlag;
+        }
+        save_meta($token, $meta);
         log_action($dir, "UPLOAD: " . implode(", ", $saved));
         echo json_encode(['status' => 'ok', 'files' => $saved, 'token' => $token]);
         exit;
@@ -222,7 +228,7 @@ if ($action === 'list') {
             'token' => $token,
             'extension' => $ext,
             // Inform clients whether the stored data is encrypted
-            'encrypted' => !empty($meta['encrypted'])
+            'encrypted' => (!empty($meta['files'][$f]['encrypted']) || !empty($meta['encrypted']))
         ];
     }
     echo json_encode(['files' => $out]);
@@ -247,6 +253,7 @@ if ($action === 'delete') {
     $deleted = [];
     if ($file) {
         $filePath = $dir . basename($file);
+        $meta = load_meta($token);
         if (file_exists($filePath)) {
             unlink($filePath);
             $deleted[] = $file;
@@ -257,7 +264,15 @@ if ($action === 'delete') {
         if (file_exists($map)) {
             $left = array_filter(file($map, FILE_IGNORE_NEW_LINES), fn($f) => $f !== $file);
             if (count($left)) file_put_contents($map, implode("\n", $left));
-            else { unlink($map); $meta = token_meta($token); if (file_exists($meta)) unlink($meta); }
+            else { unlink($map); }
+        }
+        if (isset($meta['files'][$file])) {
+            unset($meta['files'][$file]);
+            if (empty($meta['files']) && !isset($meta['password']) && !isset($meta['expiry'])) {
+                if (file_exists(token_meta($token))) unlink(token_meta($token));
+            } else {
+                save_meta($token, $meta);
+            }
         }
     } else {
         // Alles löschen
@@ -291,7 +306,7 @@ if ($action === 'download') {
     header('Content-Type: application/octet-stream');
     header('Content-Disposition: attachment; filename="' . basename($file) . '"');
     header('Content-Length: ' . filesize($filePath));
-    if (!empty($meta['encrypted'])) {
+    if (!empty($meta['files'][basename($file)]['encrypted']) || !empty($meta['encrypted'])) {
         // Signal to clients that the payload is encrypted and must be
         // decrypted on the client side.
         header('X-Encrypted: 1');
@@ -322,7 +337,13 @@ if ($action === 'zip') {
     $zip->close();
     log_action($dir, "ZIP DOWNLOAD: " . implode(", ", $files));
     header('Content-Type: application/zip');
-    if (!empty($meta['encrypted'])) {
+    $anyEnc = !empty($meta['encrypted']);
+    if (!$anyEnc) {
+        foreach ($files as $ff) {
+            if (!empty($meta['files'][$ff]['encrypted'])) { $anyEnc = true; break; }
+        }
+    }
+    if ($anyEnc) {
         // Indicates to the client that archive contents are encrypted
         header('X-Encrypted: 1');
     }
