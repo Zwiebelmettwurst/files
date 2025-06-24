@@ -157,6 +157,22 @@ $pwFromUrl = getPasswordFromUrl();
     const encryptToggle = document.getElementById('encryptToggle');
     const genTokenBtn = document.getElementById('genTokenBtn');
     const togglePasswordBtn = document.getElementById('togglePassword');
+    let encryptionState = null;
+    async function ensureEncryption(password) {
+        if (encryptionState && encryptionState.password === password) return encryptionState;
+        encryptionState = { password };
+        try {
+            const { key, salt } = await deriveKey(password);
+            encryptionState.key = key;
+            encryptionState.salt = salt;
+            encryptionState.saltB64 = btoa(String.fromCharCode(...salt));
+        } catch (err) {
+            console.error('Key derivation failed:', err);
+            encryptionState = null;
+            throw err;
+        }
+        return encryptionState;
+    }
     function getEffectiveToken() {
         return tokenInput.value.trim() || currentToken || invisibleToken;
     }
@@ -202,7 +218,10 @@ $pwFromUrl = getPasswordFromUrl();
             let pw = passwordInput.value.trim();
             let expiry = expiryInput.value || "3d";
             let q = { token: token, password: pw, expiry: expiry };
-            if (encryptToggle && encryptToggle.checked && pw) q.encrypted = 1;
+            if (encryptToggle && encryptToggle.checked && pw) {
+                q.encrypted = 1;
+                if (encryptionState && encryptionState.password === pw) q.salt = encryptionState.saltB64;
+            }
             return q;
         },
         chunkSize: 2 * 1024 * 1024,
@@ -358,11 +377,30 @@ $pwFromUrl = getPasswordFromUrl();
         progressInfo.innerHTML = '';
         showUploadControls('uploading');
         file.uploadStartTime = Date.now();
-        const start = () => r.upload();
-        if (encryptToggle && encryptToggle.checked && passwordInput.value.trim()) {
-            setupEncryption(r, passwordInput.value.trim());
+        const startUpload = () => r.upload();
+        if (file.isEncrypted || (file.file && file.file.isEncrypted)) { // encrypted replacement file
+            startUpload();
+            return;
+        }
+        const pw = passwordInput.value.trim();
+        if (encryptToggle && encryptToggle.checked && pw) {
+            ensureEncryption(pw).then(state => {
+                encryptFile(file.file, state.key, state.salt)
+                    .then(encFile => {
+                        encFile.isEncrypted = true;
+                        encFile.uploadStartTime = Date.now();
+                        r.removeFile(file);
+                        const added = r.addFile(encFile);
+                        if (added) added.isEncrypted = true;
+                        startUpload();
+                    })
+                    .catch(err => {
+                        console.error('File encryption failed:', err);
+                        startUpload();
+                    });
+            }).catch(() => startUpload());
         } else {
-            start();
+            startUpload();
         }
     });
 
