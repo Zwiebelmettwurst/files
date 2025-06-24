@@ -368,7 +368,6 @@ $pwFromUrl = getPasswordFromUrl();
     r.on('fileAdded', function (file) {
         if (file.isEncrypted) return; // skip duplicate events
         resultBox.innerHTML = '';
-        if (r.files.length === 1) uploadedFiles = [];
         let tInput = tokenInput.value.trim();
         let effectiveToken = getEffectiveToken();
         if (!tInput) tokenInput.value = effectiveToken;
@@ -450,7 +449,6 @@ $pwFromUrl = getPasswordFromUrl();
         <div class="text-center small">${formatBytes(done)} / ${formatBytes(all)} (${percent} %)</div>` : '';
     }
 
-    let uploadedFiles = [];
 
     // Nach Upload: zeige Liste (API!)
     r.on('fileSuccess', function (file, resp) {
