@@ -386,9 +386,11 @@ $pwFromUrl = getPasswordFromUrl();
     }
 
     function downloadAndDecrypt(url, filename, link) {
-        const spinner = document.createElement('span');
-        spinner.className = 'spinner-border spinner-border-sm ms-1';
-        link.appendChild(spinner);
+        const icon = link.querySelector('i');
+        const origClass = icon ? icon.className : '';
+        if (icon) {
+            icon.className = 'spinner-border spinner-border-sm';
+        }
         link.classList.add('disabled');
 
         fetch(url).then(resp => resp.blob().then(async b => {
@@ -400,7 +402,7 @@ $pwFromUrl = getPasswordFromUrl();
                 triggerDownload(b, filename);
             }
         })).finally(() => {
-            spinner.remove();
+            if (icon) icon.className = origClass;
             link.classList.remove('disabled');
         });
 
