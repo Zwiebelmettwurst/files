@@ -366,6 +366,7 @@ $pwFromUrl = getPasswordFromUrl();
     r.assignBrowse(browseBtn);
 
     r.on('fileAdded', function (file) {
+        if (file.isEncrypted) return; // skip duplicate events
         resultBox.innerHTML = '';
         if (r.files.length === 1) uploadedFiles = [];
         let tInput = tokenInput.value.trim();
@@ -379,6 +380,7 @@ $pwFromUrl = getPasswordFromUrl();
         file.uploadStartTime = Date.now();
         const startUpload = () => r.upload();
         if (file.isEncrypted || (file.file && file.file.isEncrypted)) return; // avoid re-processing replacement files
+
         const pw = passwordInput.value.trim();
         if (encryptToggle && encryptToggle.checked && pw) {
             ensureEncryption(pw).then(state => {
@@ -389,6 +391,7 @@ $pwFromUrl = getPasswordFromUrl();
                         r.removeFile(file);
                         const added = r.addFile(encFile);
                         if (added) added.isEncrypted = true;
+
                         startUpload();
                     })
                     .catch(err => {

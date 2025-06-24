@@ -58,6 +58,7 @@ function setupEncryption(r, password) {
   if (r.__encryptionSetup) return r.__encryptionSetup;
 
   r.__encryptionSetup = deriveKey(password).then(({ key, salt }) => {
+
     // store key/salt on instance for later reuse
     r.__encryption = { key, salt };
 
@@ -72,12 +73,14 @@ function setupEncryption(r, password) {
 
     async function encryptAndReplace(file) {
       if (file.isEncrypted || (file.file && file.file.isEncrypted)) return; // already processed
+
       try {
         const encryptedFile = await encryptFile(file.file, key, salt);
         encryptedFile.isEncrypted = true;
         r.removeFile(file);
         const added = r.addFile(encryptedFile);
         if (added) added.isEncrypted = true;
+
       } catch (err) {
         console.error('File encryption failed:', err);
         r.upload();
@@ -86,6 +89,7 @@ function setupEncryption(r, password) {
 
     // encrypt already added files (if any)
     r.files.slice().forEach(encryptAndReplace);
+
 
     // encrypt future files
     r.on('fileAdded', encryptAndReplace);
