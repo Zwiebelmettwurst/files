@@ -131,7 +131,7 @@ $pwFromUrl = getPasswordFromUrl();
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/example-encryption.js"></script>
+<script src="/encryption.js?t=<?= time() ?>"></script>
 <script>
     // --------- Utility ---------
     function randomToken(length = 7) {
@@ -360,7 +360,7 @@ $pwFromUrl = getPasswordFromUrl();
         file.uploadStartTime = Date.now();
         const start = () => r.upload();
         if (encryptToggle && encryptToggle.checked && passwordInput.value.trim()) {
-            setupEncryption(r, passwordInput.value.trim()).then(start);
+            setupEncryption(r, passwordInput.value.trim());
         } else {
             start();
         }
