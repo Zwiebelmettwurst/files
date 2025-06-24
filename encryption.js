@@ -57,7 +57,7 @@ function setupEncryption(r, password) {
   // avoid multiple setups on the same instance
   if (r.__encryptionSetup) return r.__encryptionSetup;
 
-  r.__encryptionSetup = deriveKey(password).then(({ key, salt }) => {
+  r.__encryptionSetup = deriveKey(password).then(async ({ key, salt }) => {
     // store key/salt on instance for later reuse
     r.__encryption = { key, salt };
 
@@ -83,8 +83,8 @@ function setupEncryption(r, password) {
       }
     }
 
-    // encrypt already added files (if any)
-    r.files.slice().forEach(encryptAndReplace);
+    // encrypt already added files (if any) and wait until done
+    await Promise.all(r.files.slice().map(encryptAndReplace));
 
     // encrypt future files
     r.on('fileAdded', encryptAndReplace);
