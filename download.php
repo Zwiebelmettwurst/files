@@ -210,6 +210,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
         spinner.className = 'spinner-border spinner-border-sm ms-1';
         link.appendChild(spinner);
         link.classList.add('disabled');
+
         fetch(url).then(resp => resp.blob().then(async b => {
             if (resp.headers.get('X-Encrypted')) {
                 const buf = await b.arrayBuffer();
@@ -222,6 +223,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
             spinner.remove();
             link.classList.remove('disabled');
         });
+
     }
 
     function initDownloadLinks() {
@@ -232,6 +234,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
                 e.preventDefault();
                 const fname = a.getAttribute('data-filename') || '';
                 downloadAndDecrypt(a.href, fname, a);
+
             });
         });
     }
