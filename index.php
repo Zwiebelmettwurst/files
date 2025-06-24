@@ -234,7 +234,6 @@ $pwFromUrl = getPasswordFromUrl();
             let q = { token: token, password: pw, expiry: expiry };
             if (encryptToggle && encryptToggle.checked && pw) {
                 q.encrypted = 1;
-                if (encryptionState && encryptionState.password === pw) q.salt = encryptionState.saltB64;
             }
             return q;
         },
@@ -396,22 +395,9 @@ $pwFromUrl = getPasswordFromUrl();
 
         const pw = passwordInput.value.trim();
         if (encryptToggle && encryptToggle.checked && pw) {
-            ensureEncryption(pw).then(state => {
-                encryptFile(file.file, state.key, state.salt)
-                    .then(encFile => {
-                        encFile.isEncrypted = true;
-                        encFile.uploadStartTime = Date.now();
-                        r.removeFile(file);
-                        const added = r.addFile(encFile);
-                        if (added) added.isEncrypted = true;
-
-                        startUpload();
-                    })
-                    .catch(err => {
-                        console.error('File encryption failed:', err);
-                        startUpload();
-                    });
-            }).catch(() => startUpload());
+            setupEncryption(r, pw)
+                .then(startUpload)
+                .catch(() => startUpload());
         } else {
             startUpload();
         }
