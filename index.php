@@ -5,18 +5,42 @@ $now = time();
 $maxAge = 3 * 24 * 60 * 60;
 
 foreach (glob($uploadDir . '*') as $entry) {
-    if (is_dir($entry)) {
-        // Einzelne Files/Chunks im Token-Ordner aufräumen
-        foreach (glob($entry . '/*') as $file) {
-            if (is_file($file) && $now - filemtime($file) > $maxAge) unlink($file);
-            if (is_dir($file) && preg_match('#^chunks#', basename($file)) && $now - filemtime($file) > $maxAge) {
-                array_map('unlink', glob($file . '/*'));
-                rmdir($file);
-            }
+    if (!is_dir($entry)) continue;
+
+    $mapPath = $entry . '/files.map';
+    $metaPath = $entry . '/files.json';
+    $meta = file_exists($metaPath) ? (json_decode(file_get_contents($metaPath), true) ?: []) : [];
+    $mapLines = file_exists($mapPath) ? file($mapPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
+    $mapChanged = false;
+
+    // Einzelne Files/Chunks im Token-Ordner aufräumen
+    foreach (glob($entry . '/*') as $file) {
+        $base = basename($file);
+        if (is_file($file) && $now - filemtime($file) > $maxAge) {
+            unlink($file);
+            $mapLines = array_filter($mapLines, fn($f) => $f !== $base);
+            if (isset($meta['files'][$base])) unset($meta['files'][$base]);
+            $mapChanged = true;
         }
-        // Token-Ordner löschen, wenn leer
-        if (count(glob($entry . '/*')) === 0) rmdir($entry);
+        if (is_dir($file) && preg_match('#^chunks#', $base) && $now - filemtime($file) > $maxAge) {
+            array_map('unlink', glob($file . '/*'));
+            rmdir($file);
+        }
     }
+
+    if ($mapChanged) {
+        if (count($mapLines)) file_put_contents($mapPath, implode("\n", $mapLines));
+        elseif (file_exists($mapPath)) unlink($mapPath);
+
+        if (!empty($meta['files']) || isset($meta['password']) || isset($meta['expiry'])) {
+            file_put_contents($metaPath, json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        } elseif (file_exists($metaPath)) {
+            unlink($metaPath);
+        }
+    }
+
+    // Token-Ordner löschen, wenn leer
+    if (count(glob($entry . '/*')) === 0) rmdir($entry);
 }
 
 // Prefill: Token/Password aus URL, falls vorhanden
