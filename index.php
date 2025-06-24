@@ -67,7 +67,7 @@ $tokenFromUrl = getTokenFromUrl();
 $pwFromUrl = getPasswordFromUrl();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <title>Resumable File Upload</title>
@@ -77,19 +77,48 @@ $pwFromUrl = getPasswordFromUrl();
     <script src="https://cdnjs.cloudflare.com/ajax/libs/resumable.js/1.1.0/resumable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script>
+        (function() {
+            const stored = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = stored || (prefersDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
 
     <style>
-        .drop-area { border: 2px dashed #0d6efd; border-radius: 1rem; background: #f8f9fa; padding: 3rem 2rem; text-align: center; transition: border-color .3s; min-height: 140px; margin-bottom: 1.5rem;}
-        .drop-area.highlight { border-color: #198754; background: #e8f5e9; }
+        .drop-area {
+            border: 2px dashed var(--bs-primary);
+            border-radius: 1rem;
+            background: var(--bs-tertiary-bg);
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: border-color .3s;
+            min-height: 140px;
+            margin-bottom: 1.5rem;
+        }
+        .drop-area.highlight {
+            border-color: var(--bs-success);
+            background: var(--bs-success-bg-subtle);
+        }
         .progress { height: 1.4rem; }
-        .file-label { font-weight: 500; color: #495057; }
+        .file-label { font-weight: 500; color: var(--bs-secondary-color); }
         #result a { word-break: break-all; }
         #upload-controls button { min-width: 80px; }
-        .qrcode-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.2);}
-        .qrcode-modal-inner { background: #fff; border-radius: 1em; padding: 2em 1em; max-width: 320px; margin: 8vh auto 0 auto; text-align: center;}
+        .qrcode-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.2); }
+        .qrcode-modal-inner {
+            background: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            border-radius: 1em;
+            padding: 2em 1em;
+            max-width: 320px;
+            margin: 8vh auto 0 auto;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
+<button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
 <div class="container my-5" style="max-width: 600px;">
     <h2 class="mb-4 text-primary text-center">Resumable File Upload</h2>
     <form id="uploadForm" autocomplete="off" class="mb-3">
@@ -722,6 +751,24 @@ $pwFromUrl = getPasswordFromUrl();
     tokenInput.addEventListener('input', function () {
         clearTimeout(pwTimeout);
         pwTimeout = setTimeout(loadFilesWithPassword, 200);
+    });
+
+    // ----- Theme Toggle -----
+    const themeToggleBtn = document.getElementById('themeToggle');
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        themeToggleBtn.innerHTML = theme === 'dark'
+            ? '<i class="bi bi-sun-fill"></i>'
+            : '<i class="bi bi-moon-fill"></i>';
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        applyTheme(document.documentElement.getAttribute('data-bs-theme'));
+        themeToggleBtn.addEventListener('click', function () {
+            const current = document.documentElement.getAttribute('data-bs-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+        });
     });
 </script>
 </body>
