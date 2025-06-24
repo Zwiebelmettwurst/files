@@ -159,19 +159,33 @@ $pwFromUrl = getPasswordFromUrl();
     const togglePasswordBtn = document.getElementById('togglePassword');
     let encryptionState = null;
     async function ensureEncryption(password) {
-        if (encryptionState && encryptionState.password === password) return encryptionState;
-        encryptionState = { password };
-        try {
-            const { key, salt } = await deriveKey(password);
-            encryptionState.key = key;
-            encryptionState.salt = salt;
-            encryptionState.saltB64 = btoa(String.fromCharCode(...salt));
-        } catch (err) {
-            console.error('Key derivation failed:', err);
-            encryptionState = null;
-            throw err;
+        if (encryptionState &&
+            encryptionState.password === password &&
+            encryptionState.key && encryptionState.salt) {
+            return encryptionState;
         }
-        return encryptionState;
+
+        if (!encryptionState || encryptionState.password !== password) {
+            encryptionState = { password };
+        }
+
+        if (encryptionState.promise) return encryptionState.promise;
+
+        encryptionState.promise = deriveKey(password)
+            .then(({ key, salt }) => {
+                encryptionState.key = key;
+                encryptionState.salt = salt;
+                encryptionState.saltB64 = btoa(String.fromCharCode(...salt));
+                encryptionState.promise = null;
+                return encryptionState;
+            })
+            .catch(err => {
+                console.error('Key derivation failed:', err);
+                encryptionState = null;
+                throw err;
+            });
+
+        return encryptionState.promise;
     }
     function getEffectiveToken() {
         return tokenInput.value.trim() || currentToken || invisibleToken;
