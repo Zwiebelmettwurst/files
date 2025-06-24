@@ -375,6 +375,47 @@ $pwFromUrl = getPasswordFromUrl();
         });
     }
 
+    function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+    }
+
+    function downloadAndDecrypt(url, filename, link) {
+        const spinner = document.createElement('span');
+        spinner.className = 'spinner-border spinner-border-sm ms-1';
+        link.appendChild(spinner);
+        link.classList.add('disabled');
+        fetch(url).then(resp => resp.blob().then(async b => {
+            if (resp.headers.get('X-Encrypted')) {
+                const buf = await b.arrayBuffer();
+                const dec = await decryptFile(buf, passwordInput.value.trim());
+                triggerDownload(dec, filename);
+            } else {
+                triggerDownload(b, filename);
+            }
+        })).finally(() => {
+            spinner.remove();
+            link.classList.remove('disabled');
+        });
+    }
+
+    function initDownloadLinks() {
+        document.querySelectorAll('.file-download-link').forEach(a => {
+            if (a.dataset.dlBound) return;
+            a.dataset.dlBound = '1';
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                const fname = a.getAttribute('data-filename') || '';
+                downloadAndDecrypt(a.href, fname, a);
+            });
+        });
+    }
+
     r.assignDrop(dropArea);
     r.assignBrowse(browseBtn);
 
@@ -511,12 +552,13 @@ $pwFromUrl = getPasswordFromUrl();
             let fileUrl = `${baseUrl}/f/${encodeURIComponent(fn.name)}${pwSeg}`;
             let previewUrl = `${window.location.origin}/action/d/${encodeURIComponent(fn.token)}/f/${encodeURIComponent(fn.name)}${pwSegFile}?preserve=true`;
             let ext = fn.name.split('.').pop().toLowerCase();
+            let lock = fn.encrypted ? ' \uD83D\uDD12' : '';
             html += `
 <div class="input-group mb-2 download-row">
-  <input type="text" class="form-control form-control-sm dl-input" id="${fileLinkId}" value="${fn.name}" data-full-link="${fileUrl}" readonly>
+  <input type="text" class="form-control form-control-sm dl-input" id="${fileLinkId}" value="${fn.name}${lock}" data-full-link="${fileUrl}" readonly>
   <button class="btn btn-outline-secondary btn-sm copy-btn" type="button" data-clipboard-target="${fileLinkId}"><i class="bi bi-clipboard"></i></button>
   <button class="btn btn-outline-secondary btn-sm preview-btn" type="button" data-url="${previewUrl}" data-ext="${ext}" title="Preview"><i class="bi bi-eye"></i></button>
-  <a href="${fileUrl}" class="btn btn-outline-primary btn-sm file-download-link" target="_blank"><i class="bi bi-download"></i></a>
+  <a href="${fileUrl}" class="btn btn-outline-primary btn-sm file-download-link" data-filename="${fn.name}"><i class="bi bi-download"></i></a>
   <button class="delete-btn btn btn-outline-danger btn-sm" title="Delete file" data-file="${fn.name}" type="button"><i class="bi bi-trash"></i></button>
 </div>
 <div id="copyStatus-${fileLinkId}" class="small text-success mb-2" style="display:none;">File link copied!</div>`;
@@ -572,6 +614,7 @@ $pwFromUrl = getPasswordFromUrl();
             });
         });
         initPreviewButtons();
+        initDownloadLinks();
     }
 
     r.on('fileError', function (file, msg) {

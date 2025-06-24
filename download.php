@@ -43,6 +43,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/encryption.js?t=<?= time() ?>"></script>
 <script>
     const token = "<?= htmlspecialchars($token) ?>";
 
@@ -194,6 +195,47 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
         });
     }
 
+    function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+    }
+
+    function downloadAndDecrypt(url, filename, link) {
+        const spinner = document.createElement('span');
+        spinner.className = 'spinner-border spinner-border-sm ms-1';
+        link.appendChild(spinner);
+        link.classList.add('disabled');
+        fetch(url).then(resp => resp.blob().then(async b => {
+            if (resp.headers.get('X-Encrypted')) {
+                const buf = await b.arrayBuffer();
+                const dec = await decryptFile(buf, password);
+                triggerDownload(dec, filename);
+            } else {
+                triggerDownload(b, filename);
+            }
+        })).finally(() => {
+            spinner.remove();
+            link.classList.remove('disabled');
+        });
+    }
+
+    function initDownloadLinks() {
+        document.querySelectorAll('.file-download-link').forEach(a => {
+            if (a.dataset.dlBound) return;
+            a.dataset.dlBound = '1';
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                const fname = a.getAttribute('data-filename') || '';
+                downloadAndDecrypt(a.href, fname, a);
+            });
+        });
+    }
+
     function renderFiles() {
         if (!files.length) {
             filesBox.innerHTML = `<div class="alert alert-warning text-center">No files available.</div>`;
@@ -209,17 +251,18 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
             let downloadUrl = `/action/d/${encodeURIComponent(token)}/f/${encodeURIComponent(name)}${pwSeg}`;
             let previewUrl = `/action/d/${encodeURIComponent(token)}/f/${encodeURIComponent(name)}${pwSegFile}?preserve=true`;
             let ext = name.split('.').pop().toLowerCase();
+            let lock = f.encrypted ? ' \uD83D\uDD12' : '';
             html += `
 <div class="list-group-item py-2">
   <div class="row align-items-center flex-nowrap g-2">
     <div class="col-5 col-md-6 min-width-0">
-      <span class="d-block text-truncate" title="${name}">${name}</span>
+      <span class="d-block text-truncate" title="${name}">${name}${lock}</span>
     </div>
     <div class="col-3 col-md-3 text-end text-secondary small flex-shrink-0">
       ${size ? `(${size})` : ''}
     </div>
     <div class="col-4 col-md-3 text-end d-flex justify-content-end align-items-center gap-2 flex-nowrap flex-shrink-0">
-      <a href="${downloadUrl}" class="btn btn-outline-primary btn-sm" download title="Download">
+      <a href="${downloadUrl}" class="btn btn-outline-primary btn-sm file-download-link" data-filename="${name}" title="Download">
         <i class="bi bi-download"></i>
       </a>
       <button class="btn btn-outline-secondary btn-sm preview-btn" data-url="${previewUrl}" data-ext="${ext}" title="Preview">
@@ -280,6 +323,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
             };
         });
         initPreviewButtons();
+        initDownloadLinks();
         // Alle löschen
         document.getElementById('deleteBtn').onclick = function () {
             if (!confirm('Really delete ALL files?')) return;

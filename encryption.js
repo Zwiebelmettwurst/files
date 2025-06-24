@@ -118,10 +118,67 @@ function setupEncryption(r, password) {
   return r.__encryptionSetup;
 }
 
+/**
+ * Derive a key from an existing salt for decryption.
+ * @param {string} password
+ * @param {Uint8Array} salt
+ * @returns {Promise<CryptoKey>}
+ */
+async function deriveKeyFromSalt(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt']
+  );
+}
+
+/**
+ * Decrypt an entire file encoded with encryptBlob chunks.
+ * @param {ArrayBuffer} buffer
+ * @param {string} password
+ * @param {number} chunkSize
+ * @returns {Promise<Blob>}
+ */
+async function decryptFile(buffer, password, chunkSize = 2 * 1024 * 1024) {
+  const u8 = new Uint8Array(buffer);
+  const salt = u8.slice(0, 16);
+  const key = await deriveKeyFromSalt(password, salt);
+  let pos = 16;
+  const parts = [];
+  while (pos < u8.length) {
+    const iv = u8.slice(pos, pos + 12);
+    pos += 12;
+    let remaining = u8.length - pos;
+    let cipherLen = chunkSize + 16;
+    if (remaining <= cipherLen) {
+      cipherLen = remaining;
+    }
+    const cipher = u8.slice(pos, pos + cipherLen);
+    pos += cipherLen;
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
+    parts.push(new Uint8Array(plain));
+  }
+  return new Blob(parts, { type: 'application/octet-stream' });
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { deriveKey, encryptBlob, setupEncryption };
+  module.exports = {
+    deriveKey,
+    encryptBlob,
+    setupEncryption,
+    deriveKeyFromSalt,
+    decryptFile
+  };
 } else {
   window.deriveKey = deriveKey;
   window.encryptBlob = encryptBlob;
   window.setupEncryption = setupEncryption;
+  window.deriveKeyFromSalt = deriveKeyFromSalt;
+  window.decryptFile = decryptFile;
 }
