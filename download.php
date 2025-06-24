@@ -258,7 +258,7 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
             let ext = name.split('.').pop().toLowerCase();
             let lock = f.encrypted ? ' \uD83D\uDD12' : '';
             html += `
-<div class="list-group-item py-2">
+<div class="list-group-item py-2" data-file="${name}">
   <div class="row align-items-center flex-nowrap g-2">
     <div class="col-5 col-md-6 min-width-0">
       <span class="d-block text-truncate" title="${name}">${name}${lock}</span>
