@@ -76,6 +76,13 @@ RewriteRule ^d/([a-zA-Z0-9_-]+)/f/(.+)/([^/]*)$ download.php?token=$1&file=$2&pa
 RewriteRule ^d/([a-zA-Z0-9_-]+)/f/(.+)$         download.php?token=$1&file=$2 [L,QSA,B]
 
 # ---------------------------------------------
+# Text note (create/view)
+# ---------------------------------------------
+RewriteRule ^note/([a-zA-Z0-9_-]+)/([^/]+)$ note.php?token=$1&password=$2 [L,QSA,B]
+RewriteRule ^note/([a-zA-Z0-9_-]+)$           note.php?token=$1 [L,QSA,B]
+RewriteRule ^note$                            note.php [L,QSA,B]
+
+# ---------------------------------------------
 # Direkt-Links zu Upload/Index mit token & password im Pfad
 # Beispiel: /hUARK4N/xyz  →  /?token=hUARK4N&password=xyz
 # ---------------------------------------------
