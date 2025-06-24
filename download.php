@@ -205,7 +205,12 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
         setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
     }
 
-    function downloadAndDecrypt(url, filename) {
+    function downloadAndDecrypt(url, filename, link) {
+        const spinner = document.createElement('span');
+        spinner.className = 'spinner-border spinner-border-sm ms-1';
+        link.appendChild(spinner);
+        link.classList.add('disabled');
+
         fetch(url).then(resp => resp.blob().then(async b => {
             if (resp.headers.get('X-Encrypted')) {
                 const buf = await b.arrayBuffer();
@@ -214,7 +219,11 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
             } else {
                 triggerDownload(b, filename);
             }
-        }));
+        })).finally(() => {
+            spinner.remove();
+            link.classList.remove('disabled');
+        });
+
     }
 
     function initDownloadLinks() {
@@ -224,7 +233,8 @@ $fileHighlight = isset($_GET['file']) ? urldecode($_GET['file']) : '';
             a.addEventListener('click', e => {
                 e.preventDefault();
                 const fname = a.getAttribute('data-filename') || '';
-                downloadAndDecrypt(a.href, fname);
+                downloadAndDecrypt(a.href, fname, a);
+
             });
         });
     }

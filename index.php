@@ -385,7 +385,12 @@ $pwFromUrl = getPasswordFromUrl();
         setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
     }
 
-    function downloadAndDecrypt(url, filename) {
+    function downloadAndDecrypt(url, filename, link) {
+        const spinner = document.createElement('span');
+        spinner.className = 'spinner-border spinner-border-sm ms-1';
+        link.appendChild(spinner);
+        link.classList.add('disabled');
+
         fetch(url).then(resp => resp.blob().then(async b => {
             if (resp.headers.get('X-Encrypted')) {
                 const buf = await b.arrayBuffer();
@@ -394,7 +399,11 @@ $pwFromUrl = getPasswordFromUrl();
             } else {
                 triggerDownload(b, filename);
             }
-        }));
+        })).finally(() => {
+            spinner.remove();
+            link.classList.remove('disabled');
+        });
+
     }
 
     function initDownloadLinks() {
@@ -404,7 +413,8 @@ $pwFromUrl = getPasswordFromUrl();
             a.addEventListener('click', e => {
                 e.preventDefault();
                 const fname = a.getAttribute('data-filename') || '';
-                downloadAndDecrypt(a.href, fname);
+                downloadAndDecrypt(a.href, fname, a);
+
             });
         });
     }
@@ -546,11 +556,13 @@ $pwFromUrl = getPasswordFromUrl();
             let previewUrl = `${window.location.origin}/action/d/${encodeURIComponent(fn.token)}/f/${encodeURIComponent(fn.name)}${pwSegFile}?preserve=true`;
             let ext = fn.name.split('.').pop().toLowerCase();
             let lock = fn.encrypted ? ' \uD83D\uDD12' : '';
+
             let previewsymbol = fn.encrypted ? 'bi bi-eye-slash' : 'bi bi-eye';
             html += `
 <div class="input-group mb-2 download-row">
   <input type="text" class="form-control form-control-sm dl-input" id="${fileLinkId}" value="${fn.name}${lock}" data-full-link="${fileUrl}" readonly>
   <button class="btn btn-outline-secondary btn-sm copy-btn" type="button" data-clipboard-target="${fileLinkId}"><i class="bi bi-clipboard"></i></button>
+
   <button class="btn btn-outline-secondary btn-sm preview-btn${fn.encrypted ? ' disabled' : ''}" type="button" data-url="${previewUrl}" data-ext="${ext}" title="Preview"><i class="${previewsymbol}"></i></button>
   <a href="${fileUrl}" class="btn btn-outline-primary btn-sm file-download-link" data-filename="${fn.name}"><i class="bi bi-download"></i></a>
   <button class="delete-btn btn btn-outline-danger btn-sm" title="Delete file" data-file="${fn.name}" type="button"><i class="bi bi-trash"></i></button>
