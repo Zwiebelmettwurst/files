@@ -54,7 +54,13 @@ async function encryptFile(file, key, salt) {
  * @param {string} password - Password for encryption
  */
 function setupEncryption(r, password) {
-  deriveKey(password).then(({ key, salt }) => {
+  // avoid multiple setups on the same instance
+  if (r.__encryptionSetup) return r.__encryptionSetup;
+
+  r.__encryptionSetup = deriveKey(password).then(({ key, salt }) => {
+    // store key/salt on instance for later reuse
+    r.__encryption = { key, salt };
+
     // Inject metadata: encrypted flag + base64 salt
     const origQuery = r.opts.query;
     r.opts.query = function() {
@@ -64,30 +70,29 @@ function setupEncryption(r, password) {
       return q;
     };
 
-    // Listen for files added
-    r.on('fileAdded', file => {
-      // If already encrypted, start upload
-      if (file.isEncrypted) {
+    async function encryptAndReplace(file) {
+      if (file.isEncrypted) return; // already processed
+      try {
+        const encryptedFile = await encryptFile(file.file, key, salt);
+        encryptedFile.isEncrypted = true;
+        r.removeFile(file);
+        r.addFile(encryptedFile);
+      } catch (err) {
+        console.error('File encryption failed:', err);
         r.upload();
-        return;
       }
-      // Otherwise, encrypt original file
-      encryptFile(file.file, key, salt)
-          .then(encryptedFile => {
-            // mark and replace
-            encryptedFile.isEncrypted = true;
-            r.removeFile(file);
-            r.addFile(encryptedFile);
-          })
-          .catch(err => {
-            console.error('File encryption failed:', err);
-            // fallback to plaintext upload
-            r.upload();
-          });
-    });
+    }
+
+    // encrypt already added files (if any)
+    r.files.slice().forEach(encryptAndReplace);
+
+    // encrypt future files
+    r.on('fileAdded', encryptAndReplace);
   }).catch(err => {
     console.error('Key derivation failed:', err);
   });
+
+  return r.__encryptionSetup;
 }
 
 // Export for CommonJS or attach globally

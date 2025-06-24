@@ -360,7 +360,7 @@ $pwFromUrl = getPasswordFromUrl();
         file.uploadStartTime = Date.now();
         const start = () => r.upload();
         if (encryptToggle && encryptToggle.checked && passwordInput.value.trim()) {
-            setupEncryption(r, passwordInput.value.trim());
+            setupEncryption(r, passwordInput.value.trim()).then(start);
         } else {
             start();
         }
