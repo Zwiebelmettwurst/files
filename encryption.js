@@ -97,7 +97,9 @@ function setupEncryption(r, password) {
 
 // Export for CommonJS or attach globally
 if (typeof module !== 'undefined') {
-  module.exports = { setupEncryption };
+  module.exports = { deriveKey, encryptFile, setupEncryption };
 } else {
+  window.deriveKey = deriveKey;
+  window.encryptFile = encryptFile;
   window.setupEncryption = setupEncryption;
 }
