@@ -313,7 +313,27 @@ if ($action === 'download') {
     }
     readfile($filePath);
     // **Jetzt direkt löschen**
-    if (!$preserveFile) { unlink($filePath); }
+    if (!$preserveFile) {
+        unlink($filePath);
+        // Map und Meta aktualisieren
+        $map = token_map($token);
+        if (file_exists($map)) {
+            $left = array_filter(
+                file($map, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES),
+                fn($f) => $f !== basename($file)
+            );
+            if (count($left)) file_put_contents($map, implode("\n", $left));
+            else unlink($map);
+        }
+        if (isset($meta['files'][basename($file)])) {
+            unset($meta['files'][basename($file)]);
+            if (empty($meta['files']) && !isset($meta['password']) && !isset($meta['expiry'])) {
+                if (file_exists(token_meta($token))) unlink(token_meta($token));
+            } else {
+                save_meta($token, $meta);
+            }
+        }
+    }
 
     // (Optional: Datei nach Download löschen? Oder separat per delete!)
     exit;
