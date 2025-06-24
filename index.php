@@ -347,6 +347,7 @@ $pwFromUrl = getPasswordFromUrl();
     r.assignBrowse(browseBtn);
 
     r.on('fileAdded', function (file) {
+        if (file.isEncrypted) return; // skip duplicate events
         resultBox.innerHTML = '';
         if (r.files.length === 1) uploadedFiles = [];
         let tInput = tokenInput.value.trim();
