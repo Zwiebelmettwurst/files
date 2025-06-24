@@ -4,12 +4,29 @@ $uploadDir = __DIR__ . '/uploads/';
 $now = time();
 $maxAge = 3 * 24 * 60 * 60;
 
+function deleteDirRecursively($dir) {
+    foreach (glob($dir . '/*') as $f) {
+        if (is_dir($f)) deleteDirRecursively($f);
+        else @unlink($f);
+    }
+    @rmdir($dir);
+}
+
 foreach (glob($uploadDir . '*') as $entry) {
     if (!is_dir($entry)) continue;
 
     $mapPath = $entry . '/files.map';
     $metaPath = $entry . '/files.json';
     $meta = file_exists($metaPath) ? (json_decode(file_get_contents($metaPath), true) ?: []) : [];
+    $expired = false;
+    if (!empty($meta['expiry']) && $meta['expiry'] !== 'never') {
+        $expTs = strtotime($meta['expiry']);
+        if ($expTs && $now > $expTs) $expired = true;
+    }
+    if ($expired) {
+        deleteDirRecursively($entry);
+        continue;
+    }
     $mapLines = file_exists($mapPath) ? file($mapPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
     $mapChanged = false;
 
