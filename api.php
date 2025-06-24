@@ -24,10 +24,10 @@ function token_dir($token) {
     return $baseDir . $token . '/';
 }
 function token_meta($token) {
-    return token_dir($token) . 'meta.json';
+    return token_dir($token) . 'files.json';
 }
 function token_map($token) {
-    return token_dir($token) . 'map.txt';
+    return token_dir($token) . 'files.map';
 }
 function token_chunks($token) {
     return token_dir($token) . 'chunks/';
