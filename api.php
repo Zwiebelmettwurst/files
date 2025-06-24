@@ -89,6 +89,12 @@ if ($action === 'upload') {
     $metaFile = token_meta($token);
     $meta = file_exists($metaFile) ? json_decode(file_get_contents($metaFile), true) ?: [] : [];
     if (!empty($_REQUEST['password'])) $meta['password'] = hash_pw($_REQUEST['password']);
+    // Optional flag to mark that the uploaded data is already client side
+    // encrypted. The server does not know the key and will only store the
+    // binary data as provided.
+    if (isset($_REQUEST['encrypted'])) {
+        $meta['encrypted'] = (bool)$_REQUEST['encrypted'];
+    }
     if (isset($_REQUEST['expiry'])) {
         $exp = null;
         switch ($_REQUEST['expiry']) {
@@ -214,7 +220,9 @@ if ($action === 'list') {
             'name' => $f,
             'size' => file_exists($path) ? filesize($path) : null,
             'token' => $token,
-            'extension' => $ext
+            'extension' => $ext,
+            // Inform clients whether the stored data is encrypted
+            'encrypted' => !empty($meta['encrypted'])
         ];
     }
     echo json_encode(['files' => $out]);
@@ -273,6 +281,7 @@ if ($action === 'download') {
     $dir = token_dir($token);
     $filePath = $dir . basename($file);
     $preserveFile = isset($_GET['preserve']) && boolval($_GET['preserve']);
+    $meta = load_meta($token);
     if (!$token || !file_exists($filePath)) { http_response_code(404); die("Not found"); }
     if (token_expired($token)) { http_response_code(410); die("Expired"); }
     if (!check_pw($token, $pw)) { http_response_code(403); die("Wrong password"); }
@@ -282,6 +291,11 @@ if ($action === 'download') {
     header('Content-Type: application/octet-stream');
     header('Content-Disposition: attachment; filename="' . basename($file) . '"');
     header('Content-Length: ' . filesize($filePath));
+    if (!empty($meta['encrypted'])) {
+        // Signal to clients that the payload is encrypted and must be
+        // decrypted on the client side.
+        header('X-Encrypted: 1');
+    }
     readfile($filePath);
     // **Jetzt direkt löschen**
     if (!$preserveFile) { unlink($filePath); }
@@ -295,6 +309,7 @@ if ($action === 'zip') {
     $token = clean_token($_GET['token'] ?? '');
     $pw = $_GET['password'] ?? $_SERVER['HTTP_X_PASSWORD'] ?? '';
     $dir = token_dir($token);
+    $meta = load_meta($token);
     if (!$token || !file_exists($dir)) { http_response_code(404); die("Not found"); }
     if (token_expired($token)) { http_response_code(410); die("Expired"); }
     if (!check_pw($token, $pw)) { http_response_code(403); die("Wrong password"); }
@@ -307,6 +322,10 @@ if ($action === 'zip') {
     $zip->close();
     log_action($dir, "ZIP DOWNLOAD: " . implode(", ", $files));
     header('Content-Type: application/zip');
+    if (!empty($meta['encrypted'])) {
+        // Indicates to the client that archive contents are encrypted
+        header('X-Encrypted: 1');
+    }
     header('Content-Disposition: attachment; filename="files_' . $token . '.zip"');
     header('Content-Length: ' . filesize($tmpZip));
     readfile($tmpZip);

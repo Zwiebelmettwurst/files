@@ -74,6 +74,10 @@ $pwFromUrl = getPasswordFromUrl();
                 <input class="form-check-input" type="checkbox" value="" id="includePasswordLink">
                 <label class="form-check-label" for="includePasswordLink">Attach password to links</label>
             </div>
+            <div class="form-check small">
+                <input class="form-check-input" type="checkbox" id="encryptToggle">
+                <label class="form-check-label" for="encryptToggle">Encrypt client-side</label>
+            </div>
             <div class="d-flex align-items-center">
                 <label for="expiry" class="form-label mb-0 me-2">Expires</label>
                 <select class="form-select form-select-sm" id="expiry" name="expiry" style="width:100px;">
@@ -127,6 +131,7 @@ $pwFromUrl = getPasswordFromUrl();
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/example-encryption.js"></script>
 <script>
     // --------- Utility ---------
     function randomToken(length = 7) {
@@ -149,6 +154,7 @@ $pwFromUrl = getPasswordFromUrl();
     const expiryInput = document.getElementById('expiry');
     const passwordLinkOption = document.getElementById('passwordLinkOption');
     const includePasswordLink = document.getElementById('includePasswordLink');
+    const encryptToggle = document.getElementById('encryptToggle');
     const genTokenBtn = document.getElementById('genTokenBtn');
     const togglePasswordBtn = document.getElementById('togglePassword');
     function getEffectiveToken() {
@@ -195,7 +201,9 @@ $pwFromUrl = getPasswordFromUrl();
             let token = tInput || currentToken || invisibleToken;
             let pw = passwordInput.value.trim();
             let expiry = expiryInput.value || "3d";
-            return { token: token, password: pw, expiry: expiry };
+            let q = { token: token, password: pw, expiry: expiry };
+            if (encryptToggle && encryptToggle.checked && pw) q.encrypted = 1;
+            return q;
         },
         chunkSize: 2 * 1024 * 1024,
         simultaneousUploads: 2,
@@ -350,7 +358,12 @@ $pwFromUrl = getPasswordFromUrl();
         progressInfo.innerHTML = '';
         showUploadControls('uploading');
         file.uploadStartTime = Date.now();
-        r.upload();
+        const start = () => r.upload();
+        if (encryptToggle && encryptToggle.checked && passwordInput.value.trim()) {
+            setupEncryption(r, passwordInput.value.trim()).then(start);
+        } else {
+            start();
+        }
     });
 
     r.on('fileProgress', function (file) {
