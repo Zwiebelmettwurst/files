@@ -379,7 +379,8 @@ $pwFromUrl = getPasswordFromUrl();
         showUploadControls('uploading');
         file.uploadStartTime = Date.now();
         const startUpload = () => r.upload();
-        if (file.isEncrypted) return; // avoid re-processing replacement files
+        if (file.isEncrypted || (file.file && file.file.isEncrypted)) return; // avoid re-processing replacement files
+
         const pw = passwordInput.value.trim();
         if (encryptToggle && encryptToggle.checked && pw) {
             ensureEncryption(pw).then(state => {
@@ -388,7 +389,9 @@ $pwFromUrl = getPasswordFromUrl();
                         encFile.isEncrypted = true;
                         encFile.uploadStartTime = Date.now();
                         r.removeFile(file);
-                        r.addFile(encFile);
+                        const added = r.addFile(encFile);
+                        if (added) added.isEncrypted = true;
+
                         startUpload();
                     })
                     .catch(err => {
