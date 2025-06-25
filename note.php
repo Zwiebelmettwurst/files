@@ -15,18 +15,12 @@ function token_dir($token) {
 function token_meta($token) {
     return token_dir($token) . 'files.json';
 }
-function hash_pw($pw) { return hash('sha256', $pw); }
 function load_meta($token) {
     $f = token_meta($token);
     return file_exists($f) ? (json_decode(file_get_contents($f), true) ?: []) : [];
 }
 function save_meta($token, $meta) {
     file_put_contents(token_meta($token), json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-}
-function check_pw($token, $pw) {
-    $meta = load_meta($token);
-    if (empty($meta['password'])) return true;
-    return hash_pw($pw) === $meta['password'];
 }
 function token_expired($token) {
     $meta = load_meta($token);
@@ -41,17 +35,24 @@ function delete_token_dir_if_empty($token) {
     if (is_dir($dir) && !glob($dir . '*')) rmdir($dir);
 }
 
+function theme_init_script() {
+    return "<script>(function(){const stored=localStorage.getItem('theme');const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;const theme=stored||(prefersDark?'dark':'light');document.documentElement.setAttribute('data-bs-theme',theme);})();</script>";
+}
+
+function theme_toggle_script() {
+    return "<script>const btn=document.getElementById('themeToggle');function applyTheme(t){document.documentElement.setAttribute('data-bs-theme',t);btn.innerHTML=t==='dark'?'<i class=\"bi bi-sun-fill\"></i>':'<i class=\"bi bi-moon-fill\"></i>';}document.addEventListener('DOMContentLoaded',function(){applyTheme(document.documentElement.getAttribute('data-bs-theme'));btn.addEventListener('click',function(){const c=document.documentElement.getAttribute('data-bs-theme');const n=c==='dark'?'light':'dark';localStorage.setItem('theme',n);applyTheme(n);});});</script>";
+}
+
 
 $method = $_SERVER['REQUEST_METHOD'];
 $error = '';
 
 if ($method === 'POST' && isset($_GET['delete'])) {
     $token = clean_token($_GET['token'] ?? '');
-    $password = $_GET['password'] ?? '';
     $h = $_POST['h'] ?? '';
     $noteFile = $token ? token_dir($token) . 'note.txt' : '';
     $meta = load_meta($token);
-    $ok = $token && file_exists($noteFile) && !token_expired($token) && check_pw($token, $password);
+    $ok = $token && file_exists($noteFile) && !token_expired($token);
     if ($ok && !empty($meta['encrypted'])) {
         $ok = $h && !empty($meta['key_hash']) && hash_equals($meta['key_hash'], $h);
     }
@@ -104,14 +105,7 @@ if ($method === 'POST') {
             <meta charset="UTF-8">
             <title>Note Created</title>
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-            <script>
-                (function(){
-                    const stored = localStorage.getItem('theme');
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    const theme = stored || (prefersDark ? 'dark' : 'light');
-                    document.documentElement.setAttribute('data-bs-theme', theme);
-                })();
-            </script>
+            <?= theme_init_script() ?>
         </head>
         <body>
         <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
@@ -153,24 +147,7 @@ if ($method === 'POST') {
             </script>
             <div class="text-center"><a href="/note" class="btn btn-secondary">New note</a></div>
         </div>
-        <script>
-            const themeToggleBtn = document.getElementById('themeToggle');
-            function applyTheme(theme){
-                document.documentElement.setAttribute('data-bs-theme', theme);
-                themeToggleBtn.innerHTML = theme === 'dark'
-                    ? '<i class="bi bi-sun-fill"></i>'
-                    : '<i class="bi bi-moon-fill"></i>';
-            }
-            document.addEventListener('DOMContentLoaded', function(){
-                applyTheme(document.documentElement.getAttribute('data-bs-theme'));
-                themeToggleBtn.addEventListener('click', function(){
-                    const current = document.documentElement.getAttribute('data-bs-theme');
-                    const next = current === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', next);
-                    applyTheme(next);
-                });
-            });
-        </script>
+        <?= theme_toggle_script() ?>
         </body>
         </html>
         <?php
@@ -179,12 +156,11 @@ if ($method === 'POST') {
 }
 
 $token = clean_token($_GET['token'] ?? '');
-$password = $_GET['password'] ?? '';
 $noteFile = $token ? token_dir($token) . 'note.txt' : '';
 
 if ($token) {
-    if (!file_exists($noteFile) || token_expired($token) || !check_pw($token, $password)) {
-        $msg = 'Note not found or wrong password.';
+    if (!file_exists($noteFile) || token_expired($token)) {
+        $msg = 'Note not found.';
         if (token_expired($token)) $msg = 'Note expired.';
         ?>
         <!DOCTYPE html>
@@ -194,38 +170,14 @@ if ($token) {
             <title>Error</title>
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-            <script>
-                (function(){
-                    const stored = localStorage.getItem('theme');
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    const theme = stored || (prefersDark ? 'dark' : 'light');
-                    document.documentElement.setAttribute('data-bs-theme', theme);
-                })();
-            </script>
+            <?= theme_init_script() ?>
         </head>
         <body>
         <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
         <div class="container" style="max-width:600px;margin-top:2em;">
             <div class="alert alert-danger text-center"><?= htmlspecialchars($msg) ?></div>
         </div>
-        <script>
-            const themeToggleBtn = document.getElementById('themeToggle');
-            function applyTheme(theme){
-                document.documentElement.setAttribute('data-bs-theme', theme);
-                themeToggleBtn.innerHTML = theme === 'dark'
-                    ? '<i class="bi bi-sun-fill"></i>'
-                    : '<i class="bi bi-moon-fill"></i>';
-            }
-            document.addEventListener('DOMContentLoaded', function(){
-                applyTheme(document.documentElement.getAttribute('data-bs-theme'));
-                themeToggleBtn.addEventListener('click', function(){
-                    const current = document.documentElement.getAttribute('data-bs-theme');
-                    const next = current === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', next);
-                    applyTheme(next);
-                });
-            });
-        </script>
+        <?= theme_toggle_script() ?>
         </body>
         </html>
         <?php
@@ -234,9 +186,7 @@ if ($token) {
     $meta = load_meta($token);
     $isEnc = !empty($meta['encrypted']);
     if (!isset($_GET['view'])) {
-        $base = '/note/' . rawurlencode($token);
-        if ($password !== '') $base .= '/' . rawurlencode($password);
-        $viewAction = $base;
+        $viewAction = '/note/' . rawurlencode($token);
         ?>
         <!DOCTYPE html>
         <html lang="en" data-bs-theme="light">
@@ -245,14 +195,7 @@ if ($token) {
             <title>View Note</title>
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-            <script>
-                (function(){
-                    const stored = localStorage.getItem('theme');
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    const theme = stored || (prefersDark ? 'dark' : 'light');
-                    document.documentElement.setAttribute('data-bs-theme', theme);
-                })();
-            </script>
+            <?= theme_init_script() ?>
         </head>
         <body>
         <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
@@ -302,24 +245,7 @@ if ($token) {
 <?php endif; ?>
         });
         </script>
-        <script>
-            const themeToggleBtn = document.getElementById('themeToggle');
-            function applyTheme(theme){
-                document.documentElement.setAttribute('data-bs-theme', theme);
-                themeToggleBtn.innerHTML = theme === 'dark'
-                    ? '<i class="bi bi-sun-fill"></i>'
-                    : '<i class="bi bi-moon-fill"></i>';
-            }
-            document.addEventListener('DOMContentLoaded', function(){
-                applyTheme(document.documentElement.getAttribute('data-bs-theme'));
-                themeToggleBtn.addEventListener('click', function(){
-                    const current = document.documentElement.getAttribute('data-bs-theme');
-                    const next = current === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', next);
-                    applyTheme(next);
-                });
-            });
-        </script>
+        <?= theme_toggle_script() ?>
         </body>
         </html>
         <?php
@@ -328,13 +254,11 @@ if ($token) {
     $h = $_GET['h'] ?? '';
     if ($isEnc) {
         if (!$h) {
-            header('Location: /note/' . rawurlencode($token) . ($password!==''?'/'.rawurlencode($password):''));
+            header('Location: /note/' . rawurlencode($token));
             exit;
         }
         if (empty($meta['key_hash']) || !hash_equals($meta['key_hash'], $h)) {
-            $base = '/note/' . rawurlencode($token);
-            if ($password !== '') $base .= '/' . rawurlencode($password);
-            $viewAction = $base;
+            $viewAction = '/note/' . rawurlencode($token);
             $msg = 'Wrong decryption key.';
             ?>
             <!DOCTYPE html>
@@ -344,14 +268,7 @@ if ($token) {
                 <title>View Note</title>
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-                <script>
-                    (function(){
-                        const stored = localStorage.getItem('theme');
-                        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                        const theme = stored || (prefersDark ? 'dark' : 'light');
-                        document.documentElement.setAttribute('data-bs-theme', theme);
-                    })();
-                </script>
+                <?= theme_init_script() ?>
             </head>
             <body>
             <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
@@ -395,24 +312,7 @@ if ($token) {
                 });
             });
             </script>
-            <script>
-            const themeToggleBtn = document.getElementById('themeToggle');
-            function applyTheme(theme){
-                document.documentElement.setAttribute('data-bs-theme', theme);
-                themeToggleBtn.innerHTML = theme === 'dark'
-                    ? '<i class="bi bi-sun-fill"></i>'
-                    : '<i class="bi bi-moon-fill"></i>';
-            }
-            document.addEventListener('DOMContentLoaded', function(){
-                applyTheme(document.documentElement.getAttribute('data-bs-theme'));
-                themeToggleBtn.addEventListener('click', function(){
-                    const current = document.documentElement.getAttribute('data-bs-theme');
-                    const next = current === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', next);
-                    applyTheme(next);
-                });
-            });
-            </script>
+            <?= theme_toggle_script() ?>
             </body>
             </html>
             <?php
@@ -432,14 +332,7 @@ if ($token) {
         <title>View Note</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-        <script>
-            (function(){
-                const stored = localStorage.getItem('theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                const theme = stored || (prefersDark ? 'dark' : 'light');
-                document.documentElement.setAttribute('data-bs-theme', theme);
-            })();
-        </script>
+        <?= theme_init_script() ?>
     </head>
     <body>
     <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
@@ -483,24 +376,7 @@ if ($token) {
         </script>
         <div id="destroyMsg" class="alert alert-warning mt-3 text-center" style="display:none;">This note has been destroyed.</div>
     </div>
-    <script>
-        const themeToggleBtn = document.getElementById('themeToggle');
-        function applyTheme(theme){
-            document.documentElement.setAttribute('data-bs-theme', theme);
-            themeToggleBtn.innerHTML = theme === 'dark'
-                ? '<i class="bi bi-sun-fill"></i>'
-                : '<i class="bi bi-moon-fill"></i>';
-        }
-        document.addEventListener('DOMContentLoaded', function(){
-            applyTheme(document.documentElement.getAttribute('data-bs-theme'));
-            themeToggleBtn.addEventListener('click', function(){
-                const current = document.documentElement.getAttribute('data-bs-theme');
-                const next = current === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('theme', next);
-                applyTheme(next);
-            });
-        });
-    </script>
+    <?= theme_toggle_script() ?>
     </body>
     </html>
     <?php
@@ -515,14 +391,7 @@ if ($token) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <script>
-        (function(){
-            const stored = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = stored || (prefersDark ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-bs-theme', theme);
-        })();
-    </script>
+    <?= theme_init_script() ?>
 </head>
 <body>
 <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
@@ -584,24 +453,7 @@ if ($token) {
         });
     });
     </script>
-    <script>
-        const themeToggleBtn = document.getElementById('themeToggle');
-        function applyTheme(theme){
-            document.documentElement.setAttribute('data-bs-theme', theme);
-            themeToggleBtn.innerHTML = theme === 'dark'
-                ? '<i class="bi bi-sun-fill"></i>'
-                : '<i class="bi bi-moon-fill"></i>';
-        }
-        document.addEventListener('DOMContentLoaded', function(){
-            applyTheme(document.documentElement.getAttribute('data-bs-theme'));
-            themeToggleBtn.addEventListener('click', function(){
-                const current = document.documentElement.getAttribute('data-bs-theme');
-                const next = current === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('theme', next);
-                applyTheme(next);
-            });
-        });
-    </script>
+    <?= theme_toggle_script() ?>
 </div>
 </body>
 </html>
