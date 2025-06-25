@@ -395,9 +395,13 @@ if ($token) {
     }
 
     $note = file_get_contents($noteFile);
-    unlink($noteFile);
-    if (file_exists(token_meta($token))) unlink(token_meta($token));
-    delete_token_dir_if_empty($token);
+    if ($note !== false) {
+        unlink($noteFile);
+        if (file_exists(token_meta($token))) unlink(token_meta($token));
+        delete_token_dir_if_empty($token);
+    } else {
+        $note = '';
+    }
     ?>
     <!DOCTYPE html>
     <html lang="en" data-bs-theme="light">
