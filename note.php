@@ -41,8 +41,32 @@ function delete_token_dir_if_empty($token) {
     if (is_dir($dir) && !glob($dir . '*')) rmdir($dir);
 }
 
+
 $method = $_SERVER['REQUEST_METHOD'];
 $error = '';
+
+if ($method === 'POST' && isset($_GET['delete'])) {
+    $token = clean_token($_GET['token'] ?? '');
+    $password = $_GET['password'] ?? '';
+    $h = $_POST['h'] ?? '';
+    $noteFile = $token ? token_dir($token) . 'note.txt' : '';
+    $meta = load_meta($token);
+    $ok = $token && file_exists($noteFile) && !token_expired($token) && check_pw($token, $password);
+    if ($ok && !empty($meta['encrypted'])) {
+        $ok = $h && !empty($meta['key_hash']) && hash_equals($meta['key_hash'], $h);
+    }
+    header('Content-Type: application/json');
+    if ($ok) {
+        unlink($noteFile);
+        if (file_exists(token_meta($token))) unlink(token_meta($token));
+        delete_token_dir_if_empty($token);
+        echo json_encode(['status' => 'deleted']);
+    } else {
+        http_response_code(400);
+        echo json_encode(['status' => 'error']);
+    }
+    exit;
+}
 
 if ($method === 'POST') {
     $token = bin2hex(random_bytes(4));
@@ -259,8 +283,9 @@ if ($token) {
                 f.submit();
             }
 
-            const hashKey = location.hash.slice(1);
-            if(hashKey){
+            const hashKeyRaw = location.hash.slice(1);
+            if(hashKeyRaw){
+                const hashKey = decodeURIComponent(hashKeyRaw);
                 f.style.display = 'none';
                 submitWithKey(hashKey);
                 return;
@@ -354,8 +379,9 @@ if ($token) {
                     f.submit();
                 }
 
-                const hashKey = location.hash.slice(1);
-                if(hashKey){
+                const hashKeyRaw = location.hash.slice(1);
+                if(hashKeyRaw){
+                    const hashKey = decodeURIComponent(hashKeyRaw);
                     f.style.display = 'none';
                     submitWithKey(hashKey);
                     return;
@@ -395,11 +421,7 @@ if ($token) {
     }
 
     $note = file_get_contents($noteFile);
-    if ($note !== false) {
-        unlink($noteFile);
-        if (file_exists(token_meta($token))) unlink(token_meta($token));
-        delete_token_dir_if_empty($token);
-    } else {
+    if ($note === false) {
         $note = '';
     }
     ?>
@@ -431,7 +453,8 @@ if ($token) {
         if (!enc) {
             el.textContent = data;
         } else {
-            const key = location.hash.slice(1);
+            const raw = location.hash.slice(1);
+            const key = raw ? decodeURIComponent(raw) : '';
             if (!key) {
                 el.textContent = "Missing decryption key.";
             } else {
@@ -442,8 +465,13 @@ if ($token) {
                         const iv = buf.slice(0, 12);
                         const ct = buf.slice(12);
                         return crypto.subtle.decrypt({name: "AES-GCM", iv}, k, ct);
-                    }).then(p => {
+                    }).then(async p => {
                         el.textContent = new TextDecoder().decode(p);
+                        try {
+                            await fetch('?delete=1', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'h=' + encodeURIComponent(<?= json_encode($h) ?>)});
+                            const msg = document.getElementById('destroyMsg');
+                            if(msg) msg.style.display = '';
+                        } catch(e) {}
                     }).catch(() => {
                         el.textContent = "Decryption failed.";
                     });
@@ -453,7 +481,7 @@ if ($token) {
             }
         }
         </script>
-        <div class="alert alert-warning mt-3 text-center">This note has been destroyed.</div>
+        <div id="destroyMsg" class="alert alert-warning mt-3 text-center" style="display:none;">This note has been destroyed.</div>
     </div>
     <script>
         const themeToggleBtn = document.getElementById('themeToggle');
