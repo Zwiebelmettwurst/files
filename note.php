@@ -242,16 +242,28 @@ if ($token) {
         document.addEventListener('DOMContentLoaded', function(){
 <?php if ($isEnc): ?>
             const f = document.getElementById('viewForm');
-            f.addEventListener('submit', async function(e){
-                e.preventDefault();
-                const key = document.getElementById('formKey').value.trim();
-                if(!key){alert('Enter decryption key'); return;}
+
+            async function submitWithKey(key){
                 const bytes = Uint8Array.from(atob(key), c => c.charCodeAt(0));
                 const digest = await crypto.subtle.digest('SHA-256', bytes);
                 const hashStr = btoa(String.fromCharCode(...new Uint8Array(digest)));
                 document.getElementById('formHash').value = hashStr;
                 location.hash = key;
                 f.submit();
+            }
+
+            const hashKey = location.hash.slice(1);
+            if(hashKey){
+                f.style.display = 'none';
+                submitWithKey(hashKey);
+                return;
+            }
+
+            f.addEventListener('submit', async function(e){
+                e.preventDefault();
+                const key = document.getElementById('formKey').value.trim();
+                if(!key){alert('Enter decryption key'); return;}
+                await submitWithKey(key);
             });
 <?php else: ?>
             // append any hash to button link
@@ -297,16 +309,28 @@ if ($token) {
             <script>
             document.addEventListener('DOMContentLoaded', function(){
                 const f = document.getElementById('viewForm');
-                f.addEventListener('submit', async function(e){
-                    e.preventDefault();
-                    const key = document.getElementById('formKey').value.trim();
-                    if(!key){alert('Enter decryption key'); return;}
+
+                async function submitWithKey(key){
                     const bytes = Uint8Array.from(atob(key), c => c.charCodeAt(0));
                     const digest = await crypto.subtle.digest('SHA-256', bytes);
                     const hashStr = btoa(String.fromCharCode(...new Uint8Array(digest)));
                     document.getElementById('formHash').value = hashStr;
                     location.hash = key;
                     f.submit();
+                }
+
+                const hashKey = location.hash.slice(1);
+                if(hashKey){
+                    f.style.display = 'none';
+                    submitWithKey(hashKey);
+                    return;
+                }
+
+                f.addEventListener('submit', async function(e){
+                    e.preventDefault();
+                    const key = document.getElementById('formKey').value.trim();
+                    if(!key){alert('Enter decryption key'); return;}
+                    await submitWithKey(key);
                 });
             });
             </script>
