@@ -132,7 +132,7 @@ if ($method === 'POST') {
             <div class="alert alert-success text-center">Note created!</div>
             <div class="input-group mb-3">
                 <input type="text" class="form-control" id="noteLink" value="<?= htmlspecialchars($link) ?>" readonly>
-                <button class="btn btn-outline-secondary copy-btn" type="button" data-clipboard-target="noteLink" title="Copy link"><i class="bi bi-clipboard"></i></button>
+                <button class="btn btn-outline-secondary copy-btn" type="button" data-clipboard-target="noteLink" title="Copy link with decryption key"><i class="bi bi-clipboard-plus"></i></button>
             </div>
             <div id="copyStatus-noteLink" class="small text-success mb-2 text-center" style="display:none;">Link copied!</div>
             <script>
@@ -418,7 +418,8 @@ if ($token) {
 }
 page_header('Create Note'); ?>
 <div class="container my-5" style="max-width:600px;">
-    <h2 class="mb-4 text-primary text-center">Create Self-Destructing Note</h2>
+    <h2 class="mb-1 text-primary text-center">Create Self-Destructing Note</h2>
+    <h6 class="mb-4 text-center primary-text">or upload <a href="/">self-destructing files</a></h6>
     <?php if ($error): ?>
     <div class="alert alert-danger text-center"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
