@@ -208,6 +208,7 @@ if ($token) {
                 <div class="mb-3">
                     <input type="text" id="formKey" class="form-control" placeholder="Decryption key" required>
                 </div>
+                <div id="errBox" class="alert alert-danger text-center" style="display:none;"></div>
                 <?php endif; ?>
                 <button type="submit" id="viewBtn" class="btn btn-primary">Read and Destroy Note</button>
             </form>
@@ -216,9 +217,30 @@ if ($token) {
         document.addEventListener('DOMContentLoaded', function(){
 <?php if ($isEnc): ?>
             const f = document.getElementById('viewForm');
+            const errBox = document.getElementById('errBox');
+            const initialErr = errBox && errBox.textContent.trim();
+
+            function showError(msg){
+                if(errBox){
+                    errBox.textContent = msg;
+                    errBox.style.display = '';
+                } else {
+                    alert(msg);
+                }
+            }
 
             async function submitWithKey(key){
-                const bytes = Uint8Array.from(atob(key), c => c.charCodeAt(0));
+                let bytes;
+                try {
+                    bytes = Uint8Array.from(atob(key), c => c.charCodeAt(0));
+                } catch(e){
+                    showError('Invalid key.');
+                    return;
+                }
+                if(bytes.length < 2){
+                    showError('Invalid key.');
+                    return;
+                }
                 const digest = await crypto.subtle.digest('SHA-256', bytes);
                 const hashStr = btoa(String.fromCharCode(...new Uint8Array(digest)));
                 document.getElementById('formHash').value = hashStr;
@@ -227,17 +249,27 @@ if ($token) {
             }
 
             const hashKeyRaw = location.hash.slice(1);
-            if(hashKeyRaw){
+            if(hashKeyRaw && !initialErr){
                 const hashKey = decodeURIComponent(hashKeyRaw);
                 f.style.display = 'none';
                 submitWithKey(hashKey);
                 return;
             }
+            if(initialErr){
+                if(location.hash){
+                    history.replaceState(null,'',location.href.split('#')[0]);
+                }
+                if(hashKeyRaw){
+                    const inp = document.getElementById('formKey');
+                    if(inp) inp.value = decodeURIComponent(hashKeyRaw);
+                }
+                errBox.style.display = '';
+            }
 
             f.addEventListener('submit', async function(e){
                 e.preventDefault();
                 const key = document.getElementById('formKey').value.trim();
-                if(!key){alert('Enter decryption key'); return;}
+                if(!key){ showError('Enter decryption key'); return; }
                 await submitWithKey(key);
             });
 <?php else: ?>
@@ -273,7 +305,9 @@ if ($token) {
             <body>
             <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
             <div class="container" style="max-width:600px;margin-top:2em;">
-                <div class="alert alert-danger text-center"><?= htmlspecialchars($msg) ?></div>
+                <div id="errBox" class="alert alert-danger text-center" style="display:none;">
+                    <?= htmlspecialchars($msg) ?>
+                </div>
                 <form id="viewForm" method="get" action="<?= htmlspecialchars($viewAction) ?>" class="mt-4 text-center">
                     <input type="hidden" name="view" value="1">
                     <input type="hidden" name="h" id="formHash">
@@ -286,9 +320,30 @@ if ($token) {
             <script>
             document.addEventListener('DOMContentLoaded', function(){
                 const f = document.getElementById('viewForm');
+                const errBox = document.getElementById('errBox');
+                const initialErr = errBox && errBox.textContent.trim();
+
+                function showError(msg){
+                    if(errBox){
+                        errBox.textContent = msg;
+                        errBox.style.display = '';
+                    } else {
+                        alert(msg);
+                    }
+                }
 
                 async function submitWithKey(key){
-                    const bytes = Uint8Array.from(atob(key), c => c.charCodeAt(0));
+                    let bytes;
+                    try {
+                        bytes = Uint8Array.from(atob(key), c => c.charCodeAt(0));
+                    } catch(e){
+                        showError('Invalid key.');
+                        return;
+                    }
+                    if(bytes.length < 2){
+                        showError('Invalid key.');
+                        return;
+                    }
                     const digest = await crypto.subtle.digest('SHA-256', bytes);
                     const hashStr = btoa(String.fromCharCode(...new Uint8Array(digest)));
                     document.getElementById('formHash').value = hashStr;
@@ -297,17 +352,27 @@ if ($token) {
                 }
 
                 const hashKeyRaw = location.hash.slice(1);
-                if(hashKeyRaw){
+                if(hashKeyRaw && !initialErr){
                     const hashKey = decodeURIComponent(hashKeyRaw);
                     f.style.display = 'none';
                     submitWithKey(hashKey);
                     return;
                 }
+                if(initialErr){
+                    if(location.hash){
+                        history.replaceState(null,'',location.href.split('#')[0]);
+                    }
+                    if(hashKeyRaw){
+                        const inp = document.getElementById('formKey');
+                        if(inp) inp.value = decodeURIComponent(hashKeyRaw);
+                    }
+                    errBox.style.display = '';
+                }
 
                 f.addEventListener('submit', async function(e){
                     e.preventDefault();
                     const key = document.getElementById('formKey').value.trim();
-                    if(!key){alert('Enter decryption key'); return;}
+                    if(!key){ showError('Enter decryption key'); return; }
                     await submitWithKey(key);
                 });
             });
