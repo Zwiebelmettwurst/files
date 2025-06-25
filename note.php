@@ -218,13 +218,23 @@ if ($token) {
         $viewAction = $base;
         ?>
         <!DOCTYPE html>
-        <html lang="en">
+        <html lang="en" data-bs-theme="light">
         <head>
             <meta charset="UTF-8">
             <title>View Note</title>
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+            <script>
+                (function(){
+                    const stored = localStorage.getItem('theme');
+                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    const theme = stored || (prefersDark ? 'dark' : 'light');
+                    document.documentElement.setAttribute('data-bs-theme', theme);
+                })();
+            </script>
         </head>
         <body>
+        <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
         <div class="container" style="max-width:600px;margin-top:2em;">
             <div class="alert alert-info text-center">This note will self-destruct after you view it.</div>
             <form id="viewForm" method="get" action="<?= htmlspecialchars($viewAction) ?>" class="mt-4 text-center">
@@ -270,6 +280,24 @@ if ($token) {
 <?php endif; ?>
         });
         </script>
+        <script>
+            const themeToggleBtn = document.getElementById('themeToggle');
+            function applyTheme(theme){
+                document.documentElement.setAttribute('data-bs-theme', theme);
+                themeToggleBtn.innerHTML = theme === 'dark'
+                    ? '<i class="bi bi-sun-fill"></i>'
+                    : '<i class="bi bi-moon-fill"></i>';
+            }
+            document.addEventListener('DOMContentLoaded', function(){
+                applyTheme(document.documentElement.getAttribute('data-bs-theme'));
+                themeToggleBtn.addEventListener('click', function(){
+                    const current = document.documentElement.getAttribute('data-bs-theme');
+                    const next = current === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('theme', next);
+                    applyTheme(next);
+                });
+            });
+        </script>
         </body>
         </html>
         <?php
@@ -288,13 +316,23 @@ if ($token) {
             $msg = 'Wrong decryption key.';
             ?>
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="en" data-bs-theme="light">
             <head>
                 <meta charset="UTF-8">
                 <title>View Note</title>
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+                <script>
+                    (function(){
+                        const stored = localStorage.getItem('theme');
+                        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                        const theme = stored || (prefersDark ? 'dark' : 'light');
+                        document.documentElement.setAttribute('data-bs-theme', theme);
+                    })();
+                </script>
             </head>
             <body>
+            <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
             <div class="container" style="max-width:600px;margin-top:2em;">
                 <div class="alert alert-danger text-center"><?= htmlspecialchars($msg) ?></div>
                 <form id="viewForm" method="get" action="<?= htmlspecialchars($viewAction) ?>" class="mt-4 text-center">
@@ -331,6 +369,24 @@ if ($token) {
                     const key = document.getElementById('formKey').value.trim();
                     if(!key){alert('Enter decryption key'); return;}
                     await submitWithKey(key);
+                });
+            });
+            </script>
+            <script>
+            const themeToggleBtn = document.getElementById('themeToggle');
+            function applyTheme(theme){
+                document.documentElement.setAttribute('data-bs-theme', theme);
+                themeToggleBtn.innerHTML = theme === 'dark'
+                    ? '<i class="bi bi-sun-fill"></i>'
+                    : '<i class="bi bi-moon-fill"></i>';
+            }
+            document.addEventListener('DOMContentLoaded', function(){
+                applyTheme(document.documentElement.getAttribute('data-bs-theme'));
+                themeToggleBtn.addEventListener('click', function(){
+                    const current = document.documentElement.getAttribute('data-bs-theme');
+                    const next = current === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('theme', next);
+                    applyTheme(next);
                 });
             });
             </script>
