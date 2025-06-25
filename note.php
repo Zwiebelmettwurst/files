@@ -125,6 +125,36 @@ if ($token) {
         <?php
         exit;
     }
+    if (!isset($_GET['view'])) {
+        $base = '/note/' . rawurlencode($token);
+        if ($password !== '') $base .= '/' . rawurlencode($password);
+        $viewLink = $base . '?view=1';
+        ?>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>View Note</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        </head>
+        <body>
+        <div class="container" style="max-width:600px;margin-top:2em;">
+            <div class="alert alert-info text-center">This note will self-destruct after you view it.</div>
+            <div class="text-center mt-4">
+                <a href="<?= htmlspecialchars($viewLink) ?>" id="viewBtn" class="btn btn-primary">Read and Destroy Note</a>
+            </div>
+        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            var l = document.getElementById('viewBtn');
+            if(l) l.href += location.hash;
+        });
+        </script>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
     $meta = load_meta($token);
     $isEnc = !empty($meta['encrypted']);
     $note = file_get_contents($noteFile);
