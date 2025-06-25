@@ -120,7 +120,8 @@ $pwFromUrl = getPasswordFromUrl();
 <body>
 <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
 <div class="container my-5" style="max-width: 600px;">
-    <h2 class="mb-4 text-primary text-center">File Upload</h2>
+    <h2 class="mb-1 text-primary text-center">File Upload</h2>
+    <h6 class="mb-4 text-center primary-text">or create a <a href="/note">self-destructing note</a></h6>
     <form id="uploadForm" autocomplete="off" class="mb-3">
         <div class="mb-3 d-flex justify-content-center flex-wrap gap-3">
             <div class="form-text">Open this page with <code>/&lt;token&gt;/&lt;password&gt;</code> to prefill the fields.</div>
