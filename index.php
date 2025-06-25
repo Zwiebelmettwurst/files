@@ -131,7 +131,9 @@ $pwFromUrl = getPasswordFromUrl();
                     <input type="text" class="form-control" id="token" name="token" placeholder="optional"
                            value="<?= htmlspecialchars($tokenFromUrl) ?>">
                     <button type="button" class="btn btn-outline-secondary" id="genTokenBtn" title="Generate token"><i class="bi bi-shuffle"></i></button>
+                    <button type="button" class="btn btn-outline-secondary" id="copyTokenBtn" title="Copy token"><i class="bi bi-clipboard"></i></button>
                 </div>
+                <div id="copyStatusToken" class="small text-success" style="display:none;">Token copied!</div>
             </div>
             <div class="d-flex align-items-center">
                 <label for="password" class="form-label mb-0 me-2">Password</label>
@@ -139,7 +141,9 @@ $pwFromUrl = getPasswordFromUrl();
                     <input type="password" class="form-control" id="password" name="password" placeholder="optional"
                            value="<?= htmlspecialchars($pwFromUrl) ?>">
                     <button type="button" class="btn btn-outline-secondary" id="togglePassword" title="Show/Hide password"><i class="bi bi-eye"></i></button>
+                    <button type="button" class="btn btn-outline-secondary" id="copyPasswordBtn" title="Copy password"><i class="bi bi-clipboard"></i></button>
                 </div>
+                <div id="copyStatusPassword" class="small text-success" style="display:none;">Password copied!</div>
             </div>
             <div class="row">
                 <div class="d-flex align-items-center">
@@ -237,6 +241,8 @@ $pwFromUrl = getPasswordFromUrl();
     const encryptOption = document.getElementById('encryptionOption');
     const genTokenBtn = document.getElementById('genTokenBtn');
     const togglePasswordBtn = document.getElementById('togglePassword');
+    const copyTokenBtn = document.getElementById('copyTokenBtn');
+    const copyPasswordBtn = document.getElementById('copyPasswordBtn');
     let encryptionState = null;
     async function ensureEncryption(password) {
         if (encryptionState &&
@@ -284,6 +290,34 @@ $pwFromUrl = getPasswordFromUrl();
             const isPwd = passwordInput.type === 'password';
             passwordInput.type = isPwd ? 'text' : 'password';
             this.innerHTML = isPwd ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        });
+    }
+
+    if (copyTokenBtn) {
+        copyTokenBtn.addEventListener('click', function () {
+            const tok = tokenInput.value.trim();
+            if (!tok) return;
+            navigator.clipboard.writeText(tok).then(function(){
+                const status = document.getElementById('copyStatusToken');
+                if (status) {
+                    status.style.display = '';
+                    setTimeout(() => { status.style.display = 'none'; }, 1500);
+                }
+            });
+        });
+    }
+
+    if (copyPasswordBtn) {
+        copyPasswordBtn.addEventListener('click', function () {
+            const pw = passwordInput.value.trim();
+            if (!pw) return;
+            navigator.clipboard.writeText(pw).then(function(){
+                const status = document.getElementById('copyStatusPassword');
+                if (status) {
+                    status.style.display = '';
+                    setTimeout(() => { status.style.display = 'none'; }, 1500);
+                }
+            });
         });
     }
 
