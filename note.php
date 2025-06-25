@@ -56,7 +56,12 @@ if ($method === 'POST') {
         file_put_contents($dir . 'note.txt', $note);
         $meta = load_meta($token);
         if (!empty($_POST['password'])) $meta['password'] = hash_pw($_POST['password']);
-        if (!empty($_POST['encrypted'])) $meta['encrypted'] = true;
+        if (!empty($_POST['encrypted'])) {
+            $meta['encrypted'] = true;
+            if (!empty($_POST['key_hash'])) {
+                $meta['key_hash'] = $_POST['key_hash'];
+            }
+        }
         if (isset($_POST['expiry'])) {
             $exp = null;
             switch ($_POST['expiry']) {
@@ -127,6 +132,111 @@ if ($token) {
     }
     $meta = load_meta($token);
     $isEnc = !empty($meta['encrypted']);
+    if (!isset($_GET['view'])) {
+        $base = '/note/' . rawurlencode($token);
+        if ($password !== '') $base .= '/' . rawurlencode($password);
+        $viewAction = $base;
+        ?>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>View Note</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        </head>
+        <body>
+        <div class="container" style="max-width:600px;margin-top:2em;">
+            <div class="alert alert-info text-center">This note will self-destruct after you view it.</div>
+            <form id="viewForm" method="get" action="<?= htmlspecialchars($viewAction) ?>" class="mt-4 text-center">
+                <input type="hidden" name="view" value="1">
+                <?php if ($isEnc): ?>
+                <input type="hidden" name="h" id="formHash">
+                <div class="mb-3">
+                    <input type="text" id="formKey" class="form-control" placeholder="Decryption key" required>
+                </div>
+                <?php endif; ?>
+                <button type="submit" id="viewBtn" class="btn btn-primary">Read and Destroy Note</button>
+            </form>
+        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function(){
+<?php if ($isEnc): ?>
+            const f = document.getElementById('viewForm');
+            f.addEventListener('submit', async function(e){
+                e.preventDefault();
+                const key = document.getElementById('formKey').value.trim();
+                if(!key){alert('Enter decryption key'); return;}
+                const bytes = Uint8Array.from(atob(key), c => c.charCodeAt(0));
+                const digest = await crypto.subtle.digest('SHA-256', bytes);
+                const hashStr = btoa(String.fromCharCode(...new Uint8Array(digest)));
+                document.getElementById('formHash').value = hashStr;
+                location.hash = key;
+                f.submit();
+            });
+<?php else: ?>
+            // append any hash to button link
+<?php endif; ?>
+        });
+        </script>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+    $h = $_GET['h'] ?? '';
+    if ($isEnc) {
+        if (!$h) {
+            header('Location: /note/' . rawurlencode($token) . ($password!==''?'/'.rawurlencode($password):''));
+            exit;
+        }
+        if (empty($meta['key_hash']) || !hash_equals($meta['key_hash'], $h)) {
+            $base = '/note/' . rawurlencode($token);
+            if ($password !== '') $base .= '/' . rawurlencode($password);
+            $viewAction = $base;
+            $msg = 'Wrong decryption key.';
+            ?>
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>View Note</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            </head>
+            <body>
+            <div class="container" style="max-width:600px;margin-top:2em;">
+                <div class="alert alert-danger text-center"><?= htmlspecialchars($msg) ?></div>
+                <form id="viewForm" method="get" action="<?= htmlspecialchars($viewAction) ?>" class="mt-4 text-center">
+                    <input type="hidden" name="view" value="1">
+                    <input type="hidden" name="h" id="formHash">
+                    <div class="mb-3">
+                        <input type="text" id="formKey" class="form-control" placeholder="Decryption key" required>
+                    </div>
+                    <button type="submit" id="viewBtn" class="btn btn-primary">Read and Destroy Note</button>
+                </form>
+            </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function(){
+                const f = document.getElementById('viewForm');
+                f.addEventListener('submit', async function(e){
+                    e.preventDefault();
+                    const key = document.getElementById('formKey').value.trim();
+                    if(!key){alert('Enter decryption key'); return;}
+                    const bytes = Uint8Array.from(atob(key), c => c.charCodeAt(0));
+                    const digest = await crypto.subtle.digest('SHA-256', bytes);
+                    const hashStr = btoa(String.fromCharCode(...new Uint8Array(digest)));
+                    document.getElementById('formHash').value = hashStr;
+                    location.hash = key;
+                    f.submit();
+                });
+            });
+            </script>
+            </body>
+            </html>
+            <?php
+            exit;
+        }
+    }
+
     $note = file_get_contents($noteFile);
     unlink($noteFile);
     if (file_exists(token_meta($token))) unlink(token_meta($token));
@@ -198,6 +308,7 @@ if ($token) {
         <div class="mb-3">
             <textarea name="note" class="form-control" rows="6" required></textarea>
         <input type="hidden" name="encrypted" value="0" id="encFlag">
+        <input type="hidden" name="key_hash" id="keyHash">
         </div>
         <div class="mb-3 d-flex justify-content-center flex-wrap gap-3">
             <div class="d-flex align-items-center">
@@ -228,6 +339,7 @@ if ($token) {
         const form = document.querySelector("form");
         const textarea = form.querySelector("textarea[name=note]");
         const flag = document.getElementById("encFlag");
+        const hashField = document.getElementById("keyHash");
         let submitting = false;
         form.addEventListener("submit", async function(e){
             if(submitting) return;
@@ -237,6 +349,9 @@ if ($token) {
             crypto.getRandomValues(keyBytes);
             const keyStr = btoa(String.fromCharCode(...keyBytes));
             sessionStorage.setItem("noteKey", keyStr);
+            const digest = await crypto.subtle.digest("SHA-256", keyBytes);
+            const hashStr = btoa(String.fromCharCode(...new Uint8Array(digest)));
+            if(hashField) hashField.value = hashStr;
             const key = await crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["encrypt"]);
             const iv = crypto.getRandomValues(new Uint8Array(12));
             const enc = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, new TextEncoder().encode(text));
