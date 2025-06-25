@@ -293,7 +293,7 @@ if ($token) {
             ?>
             <?php page_header('View Note'); ?>
             <div class="container" style="max-width:600px;margin-top:2em;">
-                <div id="errBox" class="alert alert-danger text-center" style="display:none;">
+                <div id="errBox" class="alert alert-danger text-center">
                     <?= htmlspecialchars($msg) ?>
                 </div>
                 <form id="viewForm" method="get" action="<?= htmlspecialchars($viewAction) ?>" class="mt-4 text-center">
