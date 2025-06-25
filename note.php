@@ -255,7 +255,7 @@ if ($token) {
                 const digest = await crypto.subtle.digest('SHA-256', bytes);
                 const hashStr = btoa(String.fromCharCode(...new Uint8Array(digest)));
                 document.getElementById('formHash').value = hashStr;
-                location.hash = key;
+                f.action = f.action.split('#')[0] + '#' + encodeURIComponent(key);
                 f.submit();
             }
 
@@ -350,7 +350,7 @@ if ($token) {
                     const digest = await crypto.subtle.digest('SHA-256', bytes);
                     const hashStr = btoa(String.fromCharCode(...new Uint8Array(digest)));
                     document.getElementById('formHash').value = hashStr;
-                    location.hash = key;
+                    f.action = f.action.split('#')[0] + '#' + encodeURIComponent(key);
                     f.submit();
                 }
 
