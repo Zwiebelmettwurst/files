@@ -140,24 +140,32 @@ $pwFromUrl = getPasswordFromUrl();
                     <button type="button" class="btn btn-outline-secondary" id="togglePassword" title="Show/Hide password"><i class="bi bi-eye"></i></button>
                 </div>
             </div>
-            <div id="passwordLinkOption" class="form-check small" style="display:none;">
-                <input class="form-check-input" type="checkbox" value="" id="includePasswordLink">
-                <label class="form-check-label" for="includePasswordLink">Attach password to links</label>
+            <div class="row">
+                <div class="d-flex align-items-center">
+                                        <div id="passwordLinkOption" class="form-check small me-3" style="display:none;">
+                                           <input class="form-check-input" type="checkbox" value="" id="includePasswordLink" checked>
+                                           <label class="form-check-label" for="includePasswordLink">Attach password to links</label>
+                                       </div>
+                                       <div id="encryptionOption" class="form-check small me-3">
+                                           <input class="form-check-input" type="checkbox" id="encryptToggle">
+                                           <label class="form-check-label" for="encryptToggle">Encrypt client-side</label>
+                                       </div>
+                            </div>
             </div>
-            <div class="form-check small">
-                <input class="form-check-input" type="checkbox" id="encryptToggle">
-                <label class="form-check-label" for="encryptToggle">Encrypt client-side</label>
+            <div class="row">
+                <div class="d-flex align-items-center">
+                                <label for="expiry" class="form-label mb-0 me-2">Expires</label>
+                                <select class="form-select form-select-sm" id="expiry" name="expiry" style="width:100px;">
+                                    <option value="3d">3 days</option>
+                                    <option value="1d">1 day</option>
+                                    <option value="12h">12 hours</option>
+                                    <option value="1h">1 hour</option>
+                                    <option value="never">Never</option>
+                                </select>
+                            </div>
             </div>
-            <div class="d-flex align-items-center">
-                <label for="expiry" class="form-label mb-0 me-2">Expires</label>
-                <select class="form-select form-select-sm" id="expiry" name="expiry" style="width:100px;">
-                    <option value="3d">3 days</option>
-                    <option value="1d">1 day</option>
-                    <option value="12h">12 hours</option>
-                    <option value="1h">1 hour</option>
-                    <option value="never">Never</option>
-                </select>
-            </div>
+
+
         </div>
         <div id="drop-area" class="drop-area">
             <p class="mb-2">Drag &amp; drop files here<br>or <button id="browseBtn" type="button"
@@ -225,6 +233,7 @@ $pwFromUrl = getPasswordFromUrl();
     const passwordLinkOption = document.getElementById('passwordLinkOption');
     const includePasswordLink = document.getElementById('includePasswordLink');
     const encryptToggle = document.getElementById('encryptToggle');
+    const encryptOption = document.getElementById('encryptionOption');
     const genTokenBtn = document.getElementById('genTokenBtn');
     const togglePasswordBtn = document.getElementById('togglePassword');
     let encryptionState = null;
@@ -279,7 +288,9 @@ $pwFromUrl = getPasswordFromUrl();
 
     function updatePasswordOption() {
         if (!passwordLinkOption) return;
-        passwordLinkOption.style.display = passwordInput.value.trim() ? '' : 'none';
+            passwordLinkOption.style.display = passwordInput.value.trim() ? '' : 'none';
+        if (!encryptOption) return;
+            encryptOption.style.display = passwordInput.value.trim() ? '' : 'none';
     }
     updatePasswordOption();
     if (passwordInput) passwordInput.addEventListener('input', updatePasswordOption);
