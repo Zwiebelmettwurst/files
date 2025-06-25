@@ -45,8 +45,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 $error = '';
 
 if ($method === 'POST') {
-    $token = clean_token($_POST['token'] ?? '');
-    if (!$token) $token = bin2hex(random_bytes(4));
+    $token = bin2hex(random_bytes(4));
     $dir = token_dir($token);
     if (!file_exists($dir)) mkdir($dir, 0777, true);
     $note = trim($_POST['note'] ?? '');
@@ -55,7 +54,6 @@ if ($method === 'POST') {
     } else {
         file_put_contents($dir . 'note.txt', $note);
         $meta = load_meta($token);
-        if (!empty($_POST['password'])) $meta['password'] = hash_pw($_POST['password']);
         if (!empty($_POST['encrypted'])) {
             $meta['encrypted'] = true;
             if (!empty($_POST['key_hash'])) {
@@ -74,8 +72,7 @@ if ($method === 'POST') {
             $meta['expiry'] = $exp ? date('Y-m-d H:i', $exp) : 'never';
         }
         save_meta($token, $meta);
-        $pwSeg = empty($_POST['password']) ? '' : '/' . rawurlencode($_POST['password']);
-        $link = '/note/' . rawurlencode($token) . $pwSeg;
+        $link = '/note/' . rawurlencode($token);
         ?>
         <!DOCTYPE html>
         <html lang="en" data-bs-theme="light">
@@ -509,14 +506,6 @@ if ($token) {
         <input type="hidden" name="key_hash" id="keyHash">
         </div>
         <div class="mb-3 d-flex justify-content-center flex-wrap gap-3">
-            <div class="d-flex align-items-center">
-                <label for="token" class="form-label mb-0 me-2">Token</label>
-                <input type="text" class="form-control form-control-sm" id="token" name="token" placeholder="optional" style="width:150px;">
-            </div>
-            <div class="d-flex align-items-center">
-                <label for="password" class="form-label mb-0 me-2">Password</label>
-                <input type="password" class="form-control form-control-sm" id="password" name="password" placeholder="optional" style="width:150px;">
-            </div>
             <div class="d-flex align-items-center">
                 <label for="expiry" class="form-label mb-0 me-2">Expires</label>
                 <select class="form-select form-select-sm" id="expiry" name="expiry" style="width:100px;">
