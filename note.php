@@ -56,6 +56,7 @@ if ($method === 'POST') {
         file_put_contents($dir . 'note.txt', $note);
         $meta = load_meta($token);
         if (!empty($_POST['password'])) $meta['password'] = hash_pw($_POST['password']);
+        if (!empty($_POST['encrypted'])) $meta['encrypted'] = true;
         if (isset($_POST['expiry'])) {
             $exp = null;
             switch ($_POST['expiry']) {
@@ -81,7 +82,15 @@ if ($method === 'POST') {
         <body>
         <div class="container" style="max-width:600px;margin-top:2em;">
             <div class="alert alert-success">Note created!</div>
-            <div class="mb-3"><input type="text" class="form-control" value="<?= htmlspecialchars($link) ?>" readonly></div>
+            <div class="mb-3"><input type="text" class="form-control" id="noteLink" value="<?= htmlspecialchars($link) ?>" readonly></div>
+            <script>
+            const k = sessionStorage.getItem('noteKey');
+            if (k) {
+                const inp = document.getElementById('noteLink');
+                if (inp) inp.value = inp.value + '#' + k;
+                sessionStorage.removeItem('noteKey');
+            }
+            </script>
             <div class="text-center"><a href="/note" class="btn btn-secondary">New note</a></div>
         </div>
         </body>
@@ -116,6 +125,8 @@ if ($token) {
         <?php
         exit;
     }
+    $meta = load_meta($token);
+    $isEnc = !empty($meta['encrypted']);
     $note = file_get_contents($noteFile);
     unlink($noteFile);
     if (file_exists(token_meta($token))) unlink(token_meta($token));
@@ -131,7 +142,36 @@ if ($token) {
     <body>
     <div class="container" style="max-width:600px;margin-top:2em;">
         <h2 class="mb-4 text-primary text-center">Your Note</h2>
-        <pre class="form-control" readonly style="white-space:pre-wrap;"><?= htmlspecialchars($note) ?></pre>
+        <pre id="note" class="form-control" readonly style="white-space:pre-wrap;"></pre>
+        <script>
+        const enc = <?= $isEnc ? 'true' : 'false' ?>;
+        const data = <?= json_encode($note) ?>;
+        const el = document.getElementById("note");
+        if (!enc) {
+            el.textContent = data;
+        } else {
+            const key = location.hash.slice(1);
+            if (!key) {
+                el.textContent = "Missing decryption key.";
+            } else {
+                try {
+                    const keyBytes = Uint8Array.from(atob(key), c => c.charCodeAt(0));
+                    crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["decrypt"]).then(k => {
+                        const buf = Uint8Array.from(atob(data), c => c.charCodeAt(0));
+                        const iv = buf.slice(0, 12);
+                        const ct = buf.slice(12);
+                        return crypto.subtle.decrypt({name: "AES-GCM", iv}, k, ct);
+                    }).then(p => {
+                        el.textContent = new TextDecoder().decode(p);
+                    }).catch(() => {
+                        el.textContent = "Decryption failed.";
+                    });
+                } catch (e) {
+                    el.textContent = "Invalid key.";
+                }
+            }
+        }
+        </script>
         <div class="alert alert-warning mt-3 text-center">This note has been destroyed.</div>
     </div>
     </body>
@@ -157,6 +197,7 @@ if ($token) {
     <form method="post">
         <div class="mb-3">
             <textarea name="note" class="form-control" rows="6" required></textarea>
+        <input type="hidden" name="encrypted" value="0" id="encFlag">
         </div>
         <div class="mb-3 d-flex justify-content-center flex-wrap gap-3">
             <div class="d-flex align-items-center">
@@ -182,6 +223,33 @@ if ($token) {
             <button type="submit" class="btn btn-primary">Create Note</button>
         </div>
     </form>
+    <script>
+    document.addEventListener("DOMContentLoaded", function(){
+        const form = document.querySelector("form");
+        const textarea = form.querySelector("textarea[name=note]");
+        const flag = document.getElementById("encFlag");
+        let submitting = false;
+        form.addEventListener("submit", async function(e){
+            if(submitting) return;
+            e.preventDefault();
+            const text = textarea.value;
+            const keyBytes = new Uint8Array(32);
+            crypto.getRandomValues(keyBytes);
+            const keyStr = btoa(String.fromCharCode(...keyBytes));
+            sessionStorage.setItem("noteKey", keyStr);
+            const key = await crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["encrypt"]);
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const enc = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, new TextEncoder().encode(text));
+            const out = new Uint8Array(iv.byteLength + enc.byteLength);
+            out.set(iv,0);
+            out.set(new Uint8Array(enc), iv.byteLength);
+            textarea.value = btoa(String.fromCharCode(...out));
+            flag.value = "1";
+            submitting = true;
+            form.submit();
+        });
+    });
+    </script>
 </div>
 </body>
 </html>
