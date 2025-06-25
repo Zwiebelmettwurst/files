@@ -164,11 +164,12 @@ if ($method === 'POST') {
             </script>
             <div class="text-center"><a href="/note" class="btn btn-secondary">New note</a></div>
         </div>
-        <?php page_footer(); ?>
-        <?php exit; ?>
-<?php } ?>
-<?php } ?>
-<?php
+        <?php 
+         page_footer();
+         exit; 
+    }
+}
+
 $token = clean_token($_GET['token'] ?? '');
 $noteFile = $token ? token_dir($token) . 'note.txt' : '';
 
@@ -181,10 +182,10 @@ if ($token) {
         <div class="container" style="max-width:600px;margin-top:2em;">
             <div class="alert alert-danger text-center"><?= htmlspecialchars($msg) ?></div>
         </div>
-        <?php page_footer(); ?>
-        <?php exit; ?>
-<?php    } ?>
-<?php
+        <?php page_footer();
+        exit; 
+
+    }
     $meta = load_meta($token);
     $isEnc = !empty($meta['encrypted']);
     if (!isset($_GET['view'])) {
@@ -269,10 +270,9 @@ if ($token) {
 <?php endif; ?>
         });
         </script>
-        <?php page_footer(); ?>
-        <?php exit; ?>
-<?php    } ?>
-<?php
+        <?php page_footer(); 
+      exit; 
+    }
     $h = $_GET['h'] ?? '';
     if ($isEnc) {
         if (!$h) {
@@ -357,11 +357,11 @@ if ($token) {
                 });
             });
             </script>
-            <?php page_footer(); ?>
-            <?php exit; ?>
-<?php         } ?>
-<?php     } ?>
-<?php
+            <?php page_footer(); 
+            exit;
+        }
+    }
+
     $note = file_get_contents($noteFile);
     if ($note === false) {
         $note = '';
@@ -408,11 +408,10 @@ if ($token) {
         </script>
         <div id="destroyMsg" class="alert alert-warning mt-3 text-center" style="display:none;">This note has been destroyed.</div>
     </div>
-    <?php page_footer(); ?>
-    <?php exit; ?>
-<?php } ?>
-?>
-<?php page_header('Create Note'); ?>
+    <?php page_footer();  
+    exit; 
+}
+page_header('Create Note'); ?>
 <div class="container my-5" style="max-width:600px;">
     <h2 class="mb-4 text-primary text-center">Create Self-Destructing Note</h2>
     <?php if ($error): ?>
