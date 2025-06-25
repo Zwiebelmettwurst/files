@@ -44,6 +44,32 @@ function theme_toggle_script() {
 }
 
 
+function page_header($title, $icons = true) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <title><?= htmlspecialchars($title) ?></title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <?php if ($icons): ?>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <?php endif; ?>
+        <?= theme_init_script() ?>
+    </head>
+    <body>
+    <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
+    <?php
+}
+
+function page_footer() {
+    ?>
+    <?= theme_toggle_script() ?>
+    </body>
+    </html>
+    <?php
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $error = '';
 
@@ -99,16 +125,7 @@ if ($method === 'POST') {
         save_meta($token, $meta);
         $link = '/note/' . rawurlencode($token);
         ?>
-        <!DOCTYPE html>
-        <html lang="en" data-bs-theme="light">
-        <head>
-            <meta charset="UTF-8">
-            <title>Note Created</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-            <?= theme_init_script() ?>
-        </head>
-        <body>
-        <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
+        <?php page_header('Note Created'); ?>
         <div class="container" style="max-width:600px;margin-top:2em;">
             <div class="alert alert-success">Note created!</div>
             <div class="input-group mb-3">
@@ -147,11 +164,8 @@ if ($method === 'POST') {
             </script>
             <div class="text-center"><a href="/note" class="btn btn-secondary">New note</a></div>
         </div>
-        <?= theme_toggle_script() ?>
-        </body>
-        </html>
-        <?php
-        exit;
+        <?php page_footer(); ?>
+        <?php exit; ?>
     }
 }
 
@@ -163,42 +177,19 @@ if ($token) {
         $msg = 'Note not found.';
         if (token_expired($token)) $msg = 'Note expired.';
         ?>
-        <!DOCTYPE html>
-        <html lang="en" data-bs-theme="light">
-        <head>
-            <meta charset="UTF-8">
-            <title>Error</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-            <?= theme_init_script() ?>
-        </head>
-        <body>
-        <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
+        <?php page_header('Error'); ?>
         <div class="container" style="max-width:600px;margin-top:2em;">
             <div class="alert alert-danger text-center"><?= htmlspecialchars($msg) ?></div>
         </div>
-        <?= theme_toggle_script() ?>
-        </body>
-        </html>
-        <?php
-        exit;
+        <?php page_footer(); ?>
+        <?php exit; ?>
     }
     $meta = load_meta($token);
     $isEnc = !empty($meta['encrypted']);
     if (!isset($_GET['view'])) {
         $viewAction = '/note/' . rawurlencode($token);
         ?>
-        <!DOCTYPE html>
-        <html lang="en" data-bs-theme="light">
-        <head>
-            <meta charset="UTF-8">
-            <title>View Note</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-            <?= theme_init_script() ?>
-        </head>
-        <body>
-        <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
+        <?php page_header('View Note'); ?>
         <div class="container" style="max-width:600px;margin-top:2em;">
             <div class="alert alert-info text-center">This note will self-destruct after you view it.</div>
             <form id="viewForm" method="get" action="<?= htmlspecialchars($viewAction) ?>" class="mt-4 text-center">
@@ -277,11 +268,8 @@ if ($token) {
 <?php endif; ?>
         });
         </script>
-        <?= theme_toggle_script() ?>
-        </body>
-        </html>
-        <?php
-        exit;
+        <?php page_footer(); ?>
+        <?php exit; ?>
     }
     $h = $_GET['h'] ?? '';
     if ($isEnc) {
@@ -293,17 +281,7 @@ if ($token) {
             $viewAction = '/note/' . rawurlencode($token);
             $msg = 'Wrong decryption key.';
             ?>
-            <!DOCTYPE html>
-            <html lang="en" data-bs-theme="light">
-            <head>
-                <meta charset="UTF-8">
-                <title>View Note</title>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-                <?= theme_init_script() ?>
-            </head>
-            <body>
-            <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
+            <?php page_header('View Note'); ?>
             <div class="container" style="max-width:600px;margin-top:2em;">
                 <div id="errBox" class="alert alert-danger text-center" style="display:none;">
                     <?= htmlspecialchars($msg) ?>
@@ -377,11 +355,8 @@ if ($token) {
                 });
             });
             </script>
-            <?= theme_toggle_script() ?>
-            </body>
-            </html>
-            <?php
-            exit;
+            <?php page_footer(); ?>
+            <?php exit; ?>
         }
     }
 
@@ -390,17 +365,7 @@ if ($token) {
         $note = '';
     }
     ?>
-    <!DOCTYPE html>
-    <html lang="en" data-bs-theme="light">
-    <head>
-        <meta charset="UTF-8">
-        <title>View Note</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-        <?= theme_init_script() ?>
-    </head>
-    <body>
-    <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
+    <?php page_header('View Note'); ?>
     <div class="container" style="max-width:600px;margin-top:2em;">
         <h2 class="mb-4 text-primary text-center">Your Note</h2>
         <pre id="note" class="form-control" readonly style="white-space:pre-wrap;"></pre>
@@ -441,25 +406,11 @@ if ($token) {
         </script>
         <div id="destroyMsg" class="alert alert-warning mt-3 text-center" style="display:none;">This note has been destroyed.</div>
     </div>
-    <?= theme_toggle_script() ?>
-    </body>
-    </html>
-    <?php
-    exit;
+    <?php page_footer(); ?>
+    <?php exit; ?>
 }
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <title>Create Note</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <?= theme_init_script() ?>
-</head>
-<body>
-<button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
+<?php page_header('Create Note'); ?>
 <div class="container my-5" style="max-width:600px;">
     <h2 class="mb-4 text-primary text-center">Create Self-Destructing Note</h2>
     <?php if ($error): ?>
@@ -518,7 +469,5 @@ if ($token) {
         });
     });
     </script>
-    <?= theme_toggle_script() ?>
 </div>
-</body>
-</html>
+    <?php page_footer(); ?>
