@@ -133,6 +133,7 @@ if ($method === 'POST') {
             <div class="input-group mb-3">
                 <input type="text" class="form-control" id="noteLink" value="<?= htmlspecialchars($link) ?>" readonly>
                 <button class="btn btn-outline-secondary copy-btn" type="button" data-clipboard-target="noteLink" title="Copy link with decryption key"><i class="bi bi-clipboard-plus"></i></button>
+                <button class="btn btn-outline-secondary copy-btn" type="button" data-clipboard-target="noteLink" data-nokey="1" title="Copy link without decryption key"><i class="bi bi-clipboard-minus"></i></button>
             </div>
             <div id="copyStatus-noteLink" class="small text-success mb-2 text-center" style="display:none;">Link copied!</div>
             <script>
@@ -140,9 +141,10 @@ if ($method === 'POST') {
                 const inp = document.getElementById('noteLink');
                 const k = sessionStorage.getItem('noteKey');
                 if(inp){
-                    let link = inp.value;
-                    if(k){ link += '#' + k; sessionStorage.removeItem('noteKey'); }
-                    const full = window.location.origin + link;
+                    const base = window.location.origin + inp.value;
+                    inp.setAttribute('data-base-link', base);
+                    let full = base;
+                    if(k){ full += '#' + k; sessionStorage.removeItem('noteKey'); }
                     inp.value = full;
                     inp.setAttribute('data-full-link', full);
                 }
@@ -151,8 +153,10 @@ if ($method === 'POST') {
                         const targetId = btn.getAttribute('data-clipboard-target');
                         const input = document.getElementById(targetId);
                         if(input){
-                            const fullLink = input.getAttribute('data-full-link') || input.value;
-                            navigator.clipboard.writeText(fullLink).then(function(){
+                            const link = btn.dataset.nokey === '1'
+                                ? (input.getAttribute('data-base-link') || input.value)
+                                : (input.getAttribute('data-full-link') || input.value);
+                            navigator.clipboard.writeText(link).then(function(){
                                 const status = document.getElementById('copyStatus-' + targetId);
                                 if(status){
                                     status.style.display = '';
