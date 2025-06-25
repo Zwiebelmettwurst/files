@@ -51,6 +51,8 @@ function page_header($title, $icons = true) {
     <head>
         <meta charset="UTF-8">
         <title><?= htmlspecialchars($title) ?></title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <?php if ($icons): ?>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -127,12 +129,12 @@ if ($method === 'POST') {
         ?>
         <?php page_header('Note Created'); ?>
         <div class="container" style="max-width:600px;margin-top:2em;">
-            <div class="alert alert-success">Note created!</div>
+            <div class="alert alert-success text-center">Note created!</div>
             <div class="input-group mb-3">
                 <input type="text" class="form-control" id="noteLink" value="<?= htmlspecialchars($link) ?>" readonly>
                 <button class="btn btn-outline-secondary copy-btn" type="button" data-clipboard-target="noteLink" title="Copy link"><i class="bi bi-clipboard"></i></button>
             </div>
-            <div id="copyStatus-noteLink" class="small text-success mb-2" style="display:none;">Link copied!</div>
+            <div id="copyStatus-noteLink" class="small text-success mb-2 text-center" style="display:none;">Link copied!</div>
             <script>
             document.addEventListener('DOMContentLoaded', function(){
                 const inp = document.getElementById('noteLink');
@@ -162,7 +164,7 @@ if ($method === 'POST') {
                 });
             });
             </script>
-            <div class="text-center"><a href="/note" class="btn btn-secondary">New note</a></div>
+            <div class="text-center mt-3"><a href="/note" class="btn btn-secondary">New note</a></div>
         </div>
         <?php 
          page_footer();
@@ -181,6 +183,8 @@ if ($token) {
         <?php page_header('Error'); ?>
         <div class="container" style="max-width:600px;margin-top:2em;">
             <div class="alert alert-danger text-center"><?= htmlspecialchars($msg) ?></div>
+            <div class="text-center mt-3"><a href="/note" class="btn btn-secondary">New note</a></div>
+
         </div>
         <?php page_footer();
         exit; 
@@ -407,6 +411,7 @@ if ($token) {
         }
         </script>
         <div id="destroyMsg" class="alert alert-warning mt-3 text-center" style="display:none;">This note has been destroyed.</div>
+        <div class="text-center mt-3"><a href="/note" class="btn btn-secondary">New note</a></div>
     </div>
     <?php page_footer();  
     exit; 

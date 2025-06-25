@@ -70,7 +70,7 @@ $pwFromUrl = getPasswordFromUrl();
 <html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
-    <title>Resumable File Upload</title>
+    <title>File Upload</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -120,7 +120,7 @@ $pwFromUrl = getPasswordFromUrl();
 <body>
 <button id="themeToggle" type="button" class="btn btn-outline-secondary btn-sm position-fixed top-0 end-0 m-3" title="Toggle dark mode"><i class="bi bi-moon-fill"></i></button>
 <div class="container my-5" style="max-width: 600px;">
-    <h2 class="mb-4 text-primary text-center">Resumable File Upload</h2>
+    <h2 class="mb-4 text-primary text-center">File Upload</h2>
     <form id="uploadForm" autocomplete="off" class="mb-3">
         <div class="mb-3 d-flex justify-content-center flex-wrap gap-3">
             <div class="form-text">Open this page with <code>/&lt;token&gt;/&lt;password&gt;</code> to prefill the fields.</div>
